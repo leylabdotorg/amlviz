@@ -10,6 +10,16 @@ library(dplyr)
 library(beeswarm)
 library(RCurl)
 library(data.table)
+library(RMariaDB)
+
+# database
+database <- dbConnect(RMariaDB::MariaDB(), user='payton', password='password', dbname='test', host='localhost')
+print("Connected to database")
+
+
+# database vars
+genenames_choices <- dbGetQuery(database, "SELECT Gene FROM Genes WHERE Type='TMT';")
+
 
 #Required files
 #Common files
@@ -135,26 +145,35 @@ shinyApp (
   {
     ###### TMT APP STUFF ######
     # Updating the selectize options
-    updateSelectizeInput(session, 'single_gene_name_1_t', choices = genenames_tmt$V1, server = TRUE)
-    updateSelectizeInput(session, 'single_gene_name_2_t', choices = genenames_tmt$V1, server = TRUE)
-    updateSelectizeInput(session, 'single_gene_name_3_t', choices = genenames_tmt$V1, server = TRUE)
-    updateSelectizeInput(session, 'single_gene_name_4_t', choices = genenames_tmt$V1, server = TRUE)
-    updateSelectizeInput(session, 'single_gene_name_5_t', choices = genenames_tmt$V1, server = TRUE)
+    updateSelectizeInput(session, 'single_gene_name_1_t', choices = genenames_choices$Gene, server = TRUE)
+    updateSelectizeInput(session, 'single_gene_name_2_t', choices = genenames_choices$Gene, server = TRUE)
+    updateSelectizeInput(session, 'single_gene_name_3_t', choices = genenames_choices$Gene, server = TRUE)
+    updateSelectizeInput(session, 'single_gene_name_4_t', choices = genenames_choices$Gene, server = TRUE)
+    updateSelectizeInput(session, 'single_gene_name_5_t', choices = genenames_choices$Gene, server = TRUE)
+    
+    
+    
+    
     # MULTIPLOT #
     output$multigene_plot_tmt <- renderPlotly({
-      genesToPlot <- input$single_gene_name_1_t
-      #genesToPlot <- c("DNMT3A","TP53")
+      # Getting actual genes to plot
+      #genesToPlot <- input$single_gene_name_1_t
+      genesToPlot <- c("DNMT3A","TP53")
       if(length(genesToPlot) > 0)
       {
         tcga = NULL
         for(g in genesToPlot){
-          #tcga = rbind(tcga,read.table(paste0("../AML_proteomics-tmp/TCGA_Proteomics_app/Gene_files/TMT/",g,".tsv"),sep="\t",stringsAsFactors=F,header=T,check.names=FALSE))
-          tcga = rbind(tcga,read.table(paste0("https://storage.googleapis.com/tcga_shiny/TCGA_Proteomics_app/Gene_files/TMT/",g,".tsv"),sep="\t",stringsAsFactors=F,header=T,check.names=FALSE))
+          tcga = rbind(tcga,read.table(paste0("/home/payton/research/washu/TCGA_Proteomics_App/Prep/TCGA_Proteomics_app/Gene_files/TMT/",g,".tsv"),sep="\t",stringsAsFactors=F,header=T,check.names=FALSE))
+          #tcga = rbind(tcga,read.table(paste0("https://storage.googleapis.com/tcga_shiny/TCGA_Proteomics_app/Gene_files/TMT/",g,".tsv"),sep="\t",stringsAsFactors=F,header=T,check.names=FALSE))
+          #SELECT Gene,UPN,Value FROM Genes WHERE (Gene='DNMT3A' OR Gene='TP53') AND Type='TMT';
         }
+        
+        # Data cleanup and preparing for output
         df = melt(tcga,id.vars="gene")
         names(df) <- c("Gene", "UPN", "Log2.Expression")
-        df <- merge(df, clinicaldata_tmt, by="UPN")
+        df <- merge(df, clinicaldata_tmt, by="UPN") # SELECT * FROM TMT_Clinical WHERE (UPN="ND8" OR ...);
         dmtm <<- df
+        
         g <- ggplot(df,aes(fill=Gene, y=Log2.Expression, x=Name, text = paste0("UPN ID: ",UPN,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_bar(position="dodge", stat="identity") + theme_bw() +
           theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=10, family="avenir", face="bold"), 
                 axis.title=element_text(size=12, family="avenir", face="bold"),
@@ -165,16 +184,27 @@ shinyApp (
         
       }
     })
+    
+    # Output file
     output$downloadData_t_m <- downloadHandler(
       filename = function() {paste0("Output.csv")},
       content = function(file) {write.csv(dmtm, file, quote = F, row.names = F, sep = ",")}
     )
+    
+    
+    
+    
+    
+    
+    
+    
     # SUBTYPE #
     output$singlegene_plot_subtype_tmt <- renderPlotly({
-      genesToPlot <- toupper(input$single_gene_name_2_t)
-      subtypesToPlot <- input$subtypes_t
-      #genesToPlot <- "TP53"
-      #subtypesToPlot <- c("M0","M1","M2","M3","M4","M5","Healthy Lin-")
+      # Getting actual genes to plot
+      #genesToPlot <- toupper(input$single_gene_name_2_t)
+      #subtypesToPlot <- input$subtypes_t
+      genesToPlot <- "TP53"
+      subtypesToPlot <- c("M0","M1","M2","M3","M4","M5","Healthy Lin-")
       tcga = NULL
       if(length(subtypesToPlot) > 0)
       {
@@ -184,23 +214,30 @@ shinyApp (
           #destfile = paste0("../Preps for the apps/TCGA Proteomics data/Latest_dataset_nolog/",genesToPlot,".tsv")
           if(url.exists(destfile))
           {
-            tcga = as.data.frame(read.table(file = paste0("https://storage.googleapis.com/tcga_shiny/TCGA_Proteomics_app/Gene_files/TMT/",genesToPlot,".tsv"), header = TRUE, stringsAsFactors = F,check.names=FALSE))
-            #tcga = as.data.frame(read.table(file = paste0("../AML_proteomics-tmp/TCGA_Proteomics_app/Gene_files/TMT/",genesToPlot,".tsv"), header = TRUE, stringsAsFactors = F,check.names=FALSE))
+            #tcga = as.data.frame(read.table(file = paste0("https://storage.googleapis.com/tcga_shiny/TCGA_Proteomics_app/Gene_files/TMT/",genesToPlot,".tsv"), header = TRUE, stringsAsFactors = F,check.names=FALSE))
+            tcga = as.data.frame(read.table(file = paste0("/home/payton/research/washu/TCGA_Proteomics_App/Prep/TCGA_Proteomics_app/Gene_files/TMT/",genesToPlot,".tsv"), header = TRUE, stringsAsFactors = F,check.names=FALSE))
             rownames(tcga) = tcga$gene
-            tcga <- tcga[,-1]
-            bysubtype <- filter(clinicaldata_tmt, clinicaldata_tmt$FAB %in% subtypesToPlot)
-            plotttinggene <- tcga[,colnames(tcga) %in% bysubtype$UPN]
-            plotttinggene <- t(plotttinggene)
-            plotttinggene <- as.data.frame(plotttinggene)
-            plotttinggene$UPN <- rownames(plotttinggene)
-            rownames(plotttinggene) <- NULL
-            finalmatrix <- merge(plotttinggene, bysubtype, by="UPN")
+            tcga <- tcga[,-1] # SELECT Value FROM Genes WHERE Gene="TP53"; (Replace TP53 with all genes selected)
+            
+            
+            bysubtype <- filter(clinicaldata_tmt, clinicaldata_tmt$FAB %in% subtypesToPlot) # Selects only observations with FAB that is in subtypesToPlot (just clinical data)
+            plottinggene <- tcga[,colnames(tcga) %in% bysubtype$UPN]
+            plottinggene <- t(plottinggene)
+            plottinggene <- as.data.frame(plottinggene)
+            plottinggene$UPN <- rownames(plottinggene)
+            rownames(plottinggene) <- NULL
+            # plottinggene shape is || Values | UPN ||
+            
+            
+            # Data cleanup and preparing for output
+            finalmatrix <- merge(plottinggene, bysubtype, by="UPN")
             finalmatrix <- finalmatrix[,c(2,3,4,5,6)]
             colnames(finalmatrix) <- c("Log2.Expression","Name","TCGA_ID","TCGA_Name","FAB")
             finalmatrix$FAB <- factor(finalmatrix$FAB,levels=c("M0","M1","M2","M3","M4","M5","Healthy Lin-"))
             finalmatrix$Gene <- genesToPlot
             finalmatrix <- finalmatrix[,c(2,3,4,5,1,6)]
             dmts <<- finalmatrix
+            
             g <- ggplot(finalmatrix,aes(FAB, Log2.Expression, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
               ggtitle(paste0("Log2 Expression for ",genesToPlot)) + 
               theme(text=element_text(size=12, family="avenir", face="bold"), 
@@ -211,16 +248,25 @@ shinyApp (
         }
       }
     })
+    
+    # Output file
     output$downloadData_t_s <- downloadHandler(
       filename = function() {paste0("Output.csv")},
       content = function(file) {write.csv(dmts, file, quote = F, row.names = F, sep = "\t")}
     )
+    
+    
+    
+    
+    
+    
+    
     # CYTOGENETICS #
     output$singlegene_plot_cytogenetics_tmt <- renderPlotly({
-      genesToPlot <- toupper(input$single_gene_name_3_t)
-      subtypesToPlot <- input$cytogenetics_t
-      #genesToPlot <- "DNMT3A"
-      #subtypesToPlot <- c("Poor","Good","Intermediate","Healthy Lin-")
+      #genesToPlot <- toupper(input$single_gene_name_3_t)
+      #subtypesToPlot <- input$cytogenetics_t
+      genesToPlot <- "DNMT3A"
+      subtypesToPlot <- c("Poor","Good","Intermediate","Healthy Lin-")
       tcga = NULL
       if(length(subtypesToPlot) > 0)
       {
@@ -234,13 +280,17 @@ shinyApp (
             #tcga = as.data.frame(read.table(file = paste0("../AML_proteomics-tmp/TCGA_Proteomics_app/Gene_files/TMT/",genesToPlot,".tsv"), header = TRUE, stringsAsFactors = F,check.names=FALSE))
             rownames(tcga) = tcga$gene
             tcga <- tcga[,-1]
+            
+            
             bysubtype <- filter(clinicaldata_tmt, clinicaldata_tmt$Cyto_Risk %in% subtypesToPlot)
-            plotttinggene <- tcga[,colnames(tcga) %in% bysubtype$UPN]
-            plotttinggene <- t(plotttinggene)
-            plotttinggene <- as.data.frame(plotttinggene)
-            plotttinggene$UPN <- rownames(plotttinggene)
-            rownames(plotttinggene) <- NULL
-            finalmatrix <- merge(plotttinggene, bysubtype, by="UPN")
+            plottinggene <- tcga[,colnames(tcga) %in% bysubtype$UPN]
+            plottinggene <- t(plottinggene)
+            plottinggene <- as.data.frame(plottinggene)
+            plottinggene$UPN <- rownames(plottinggene)
+            rownames(plottinggene) <- NULL
+            
+            # Data cleanup and preparing for output
+            finalmatrix <- merge(plottinggene, bysubtype, by="UPN")
             finalmatrix <- finalmatrix[,c(2,3,4,5,7)]
             colnames(finalmatrix) <- c("Log2.Expression","Name","TCGA_ID","TCGA_Name","Cyto_risk")
             levels(finalmatrix$Cyto_risk) <- c("Favourable","Healthy Lin-","Intermediate","Adverse")
@@ -248,6 +298,7 @@ shinyApp (
             finalmatrix$Gene <- genesToPlot
             finalmatrix <- finalmatrix[,c(2,3,4,5,1,6)]
             dmtc <<- finalmatrix
+            
             g <- ggplot(finalmatrix,aes(Cyto_risk, Log2.Expression, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
               ggtitle(paste0("Log2 Expression for ",genesToPlot)) + 
               theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=12, family="avenir", face="bold")) +
@@ -257,10 +308,22 @@ shinyApp (
         }
       }
     })
+    
+    # Output file
     output$downloadData_t_c <- downloadHandler(
       filename = function() {paste0("Output.csv")},
       content = function(file) {write.csv(dmtc, file, quote = F, row.names = F, sep = "\t")}
     )
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     # FUSION #
     output$singlegene_plot_fusion_tmt <- renderPlotly({
       genesToPlot <- toupper(input$single_gene_name_4_t)
@@ -280,13 +343,15 @@ shinyApp (
             #tcga = as.data.frame(read.table(file = paste0("../AML_proteomics-tmp/TCGA_Proteomics_app/Gene_files/TMT/",genesToPlot,".tsv"), header = TRUE, stringsAsFactors = F,check.names=FALSE))
             rownames(tcga) = tcga$gene
             tcga <- tcga[,-1]
+            
             bysubtype <- filter(clinicaldata_tmt, clinicaldata_tmt$Fusion %in% subtypesToPlot)
-            plotttinggene <- tcga[,colnames(tcga) %in% bysubtype$UPN]
-            plotttinggene <- t(plotttinggene)
-            plotttinggene <- as.data.frame(plotttinggene)
-            plotttinggene$UPN <- rownames(plotttinggene)
-            rownames(plotttinggene) <- NULL
-            finalmatrix <- merge(plotttinggene, bysubtype, by="UPN")
+            plottinggene <- tcga[,colnames(tcga) %in% bysubtype$UPN]
+            plottinggene <- t(plottinggene)
+            plottinggene <- as.data.frame(plottinggene)
+            plottinggene$UPN <- rownames(plottinggene)
+            rownames(plottinggene) <- NULL
+            
+            finalmatrix <- merge(plottinggene, bysubtype, by="UPN")
             finalmatrix <- finalmatrix[,c(2,3,4,5,8)]
             colnames(finalmatrix) <- c("Log2.Expression","Name","TCGA_ID","TCGA_Name","Fusion")
             finalmatrix$Fusion <- factor(finalmatrix$Fusion,levels=c("CBFB","RUNX1","PML","MLL","NSD1","BCR-ABL1","Normal","Healthy Lin-"))
@@ -294,6 +359,7 @@ shinyApp (
             finalmatrix$Gene <- genesToPlot
             finalmatrix <- finalmatrix[,c(2,3,4,5,1,6)]
             dmtf <<- finalmatrix
+            
             g <- ggplot(finalmatrix,aes(Fusion, Log2.Expression, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
               ggtitle(paste0("Log2 Expression for ",genesToPlot)) + 
               theme(text=element_text(size=12, family="avenir", face="bold"),axis.text=element_text(size=12, family="avenir", face="bold"), axis.text.x = element_text(angle = 45)) +
@@ -307,6 +373,19 @@ shinyApp (
       filename = function() {paste0("Output.csv")},
       content = function(file) {write.csv(dmtf, file, quote = F, row.names = F, sep = "\t")}
     )
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     # MUTATION #
     output$singlegene_plot_mutation_tmt <- renderPlotly({
       normalgenes <- toupper(input$single_gene_name_5_t)
@@ -363,6 +442,13 @@ shinyApp (
     )
     
     
+    
+    
+    
+    
+    
+    
+    
     ###### LFQ APP STUFF ######
     # Updating the selectize options
     updateSelectizeInput(session, 'single_gene_name_1_l', choices = genenames_lfq$V1, server = TRUE)
@@ -415,12 +501,12 @@ shinyApp (
             rownames(tcga) = tcga$gene
             tcga <- tcga[,-1]
             bysubtype <- filter(clinicaldata_lfq, clinicaldata_lfq$FAB %in% subtypesToPlot)
-            plotttinggene <- tcga[,colnames(tcga) %in% bysubtype$UPN]
-            plotttinggene <- t(plotttinggene)
-            plotttinggene <- as.data.frame(plotttinggene)
-            plotttinggene$UPN <- rownames(plotttinggene)
-            rownames(plotttinggene) <- NULL
-            finalmatrix <- merge(plotttinggene, bysubtype, by="UPN")
+            plottinggene <- tcga[,colnames(tcga) %in% bysubtype$UPN]
+            plottinggene <- t(plottinggene)
+            plottinggene <- as.data.frame(plottinggene)
+            plottinggene$UPN <- rownames(plottinggene)
+            rownames(plottinggene) <- NULL
+            finalmatrix <- merge(plottinggene, bysubtype, by="UPN")
             finalmatrix <- finalmatrix[,c(1,2,3,4,6)]
             colnames(finalmatrix) <- c("UPN","Expression","Name","TCGA_Name","FAB")
             finalmatrix$FAB <- factor(finalmatrix$FAB,levels=c("M0","M1","M2","M3","M4","M5","Healthy CD34","Healthy Lin-"))
@@ -459,12 +545,12 @@ shinyApp (
             rownames(tcga) = tcga$gene
             tcga <- tcga[,-1]
             bysubtype <- filter(clinicaldata_lfq, clinicaldata_lfq$Cyto_Risk %in% subtypesToPlot)
-            plotttinggene <- tcga[,colnames(tcga) %in% bysubtype$UPN]
-            plotttinggene <- t(plotttinggene)
-            plotttinggene <- as.data.frame(plotttinggene)
-            plotttinggene$UPN <- rownames(plotttinggene)
-            rownames(plotttinggene) <- NULL
-            finalmatrix <- merge(plotttinggene, bysubtype, by="UPN")
+            plottinggene <- tcga[,colnames(tcga) %in% bysubtype$UPN]
+            plottinggene <- t(plottinggene)
+            plottinggene <- as.data.frame(plottinggene)
+            plottinggene$UPN <- rownames(plottinggene)
+            rownames(plottinggene) <- NULL
+            finalmatrix <- merge(plottinggene, bysubtype, by="UPN")
             finalmatrix <- finalmatrix[,c(1,2,3,4,7)]
             colnames(finalmatrix) <- c("UPN","Expression","Name","TCGA_Name","Cyto_risk")
             levels(finalmatrix$Cyto_risk) <- c("Favourable","Healthy CD34","Healthy Lin-","Intermediate","Adverse")
@@ -504,12 +590,12 @@ shinyApp (
             rownames(tcga) = tcga$gene
             tcga <- tcga[,-1]
             bysubtype <- filter(clinicaldata_lfq, clinicaldata_lfq$Fusion %in% subtypesToPlot)
-            plotttinggene <- tcga[,colnames(tcga) %in% bysubtype$UPN]
-            plotttinggene <- t(plotttinggene)
-            plotttinggene <- as.data.frame(plotttinggene)
-            plotttinggene$UPN <- rownames(plotttinggene)
-            rownames(plotttinggene) <- NULL
-            finalmatrix <- merge(plotttinggene, bysubtype, by="UPN")
+            plottinggene <- tcga[,colnames(tcga) %in% bysubtype$UPN]
+            plottinggene <- t(plottinggene)
+            plottinggene <- as.data.frame(plottinggene)
+            plottinggene$UPN <- rownames(plottinggene)
+            rownames(plottinggene) <- NULL
+            finalmatrix <- merge(plottinggene, bysubtype, by="UPN")
             finalmatrix <- finalmatrix[,c(1,2,3,4,8)]
             colnames(finalmatrix) <- c("UPN","Expression","Name","TCGA_Name","Fusion")
             finalmatrix$Fusion <- factor(finalmatrix$Fusion,levels=c("CBFB","RUNX1","PML","MLL","NSD1","BCR-ABL1","Normal","Healthy CD34","Healthy Lin-"))
@@ -610,14 +696,14 @@ shinyApp (
             rownames(tcga) = tcga$Phosphosite
             tcga <- tcga[,-1]
             bysubtype <- filter(clinicaldata_pho, clinicaldata_pho$FAB %in% subtypesToPlot)
-            plotttinggene <- tcga[,colnames(tcga) %in% bysubtype$UPN]
-            plotttinggene <- t(plotttinggene)
-            plotttinggene <- as.data.frame(plotttinggene)
-            plotttinggene$UPN <- rownames(plotttinggene)
-            rownames(plotttinggene) <- NULL
-            plotttinggene <- melt(plotttinggene, id.vars=c("UPN"))
-            colnames(plotttinggene) <- c("UPN","Phosphite","Expression")
-            finalmatrix <- merge(plotttinggene, bysubtype, by="UPN")
+            plottinggene <- tcga[,colnames(tcga) %in% bysubtype$UPN]
+            plottinggene <- t(plottinggene)
+            plottinggene <- as.data.frame(plottinggene)
+            plottinggene$UPN <- rownames(plottinggene)
+            rownames(plottinggene) <- NULL
+            plottinggene <- melt(plottinggene, id.vars=c("UPN"))
+            colnames(plottinggene) <- c("UPN","Phosphite","Expression")
+            finalmatrix <- merge(plottinggene, bysubtype, by="UPN")
             finalmatrix$FAB <- factor(finalmatrix$FAB,levels=c("M0","M1","M2","M3","M4","M5","Healthy Lin-"))
             finalmatrix$Gene <- genesToPlot
             dmps <<- finalmatrix
@@ -656,14 +742,14 @@ shinyApp (
             rownames(tcga) = tcga$Phosphosite
             tcga <- tcga[,-1]
             bysubtype <- filter(clinicaldata_pho, clinicaldata_pho$Cyto_Risk %in% subtypesToPlot)
-            plotttinggene <- tcga[,colnames(tcga) %in% bysubtype$UPN]
-            plotttinggene <- t(plotttinggene)
-            plotttinggene <- as.data.frame(plotttinggene)
-            plotttinggene$UPN <- rownames(plotttinggene)
-            rownames(plotttinggene) <- NULL
-            plotttinggene <- melt(plotttinggene, id.vars=c("UPN"))
-            colnames(plotttinggene) <- c("UPN","Phosphite","Expression")
-            finalmatrix <- merge(plotttinggene, bysubtype, by="UPN")
+            plottinggene <- tcga[,colnames(tcga) %in% bysubtype$UPN]
+            plottinggene <- t(plottinggene)
+            plottinggene <- as.data.frame(plottinggene)
+            plottinggene$UPN <- rownames(plottinggene)
+            rownames(plottinggene) <- NULL
+            plottinggene <- melt(plottinggene, id.vars=c("UPN"))
+            colnames(plottinggene) <- c("UPN","Phosphite","Expression")
+            finalmatrix <- merge(plottinggene, bysubtype, by="UPN")
             levels(finalmatrix$Cyto_Risk) <- c("Favourable","Healthy Lin-","Intermediate","Adverse")
             finalmatrix$Cyto_Risk <- factor(finalmatrix$Cyto_Risk,levels=c("Favourable","Intermediate","Adverse","Healthy Lin-"))
             finalmatrix$Gene <- genesToPlot
@@ -703,14 +789,14 @@ shinyApp (
             rownames(tcga) = tcga$Phosphosite
             tcga <- tcga[,-1]
             bysubtype <- filter(clinicaldata_pho, clinicaldata_pho$Fusion %in% subtypesToPlot)
-            plotttinggene <- tcga[,colnames(tcga) %in% bysubtype$UPN]
-            plotttinggene <- t(plotttinggene)
-            plotttinggene <- as.data.frame(plotttinggene)
-            plotttinggene$UPN <- rownames(plotttinggene)
-            rownames(plotttinggene) <- NULL
-            plotttinggene <- melt(plotttinggene, id.vars=c("UPN"))
-            colnames(plotttinggene) <- c("UPN","Phosphite","Expression")
-            finalmatrix <- merge(plotttinggene, bysubtype, by="UPN")
+            plottinggene <- tcga[,colnames(tcga) %in% bysubtype$UPN]
+            plottinggene <- t(plottinggene)
+            plottinggene <- as.data.frame(plottinggene)
+            plottinggene$UPN <- rownames(plottinggene)
+            rownames(plottinggene) <- NULL
+            plottinggene <- melt(plottinggene, id.vars=c("UPN"))
+            colnames(plottinggene) <- c("UPN","Phosphite","Expression")
+            finalmatrix <- merge(plottinggene, bysubtype, by="UPN")
             finalmatrix$Fusion <- factor(finalmatrix$Fusion,levels=c("CBFB","RUNX1","PML","MLL","NSD1","BCR-ABL1","Normal","Healthy Lin-"))
             levels(finalmatrix$Fusion) <- c("CBFB-MYH11","RUNX1-RUNX1T1","PML-RARA","MLL-X","NUP98-NSD1","BCR-ABL","AML without Fusion","Healthy Donor Lin-")
             finalmatrix$Gene <- genesToPlot
@@ -838,12 +924,12 @@ shinyApp (
             rownames(tcga) = tcga$gene
             tcga <- tcga[,-1]
             bysubtype <- filter(clinicaldata_mrna, clinicaldata_mrna$FAB %in% subtypesToPlot)
-            plotttinggene <- tcga[,colnames(tcga) %in% bysubtype$UPN]
-            plotttinggene <- t(plotttinggene)
-            plotttinggene <- as.data.frame(plotttinggene)
-            plotttinggene$UPN <- rownames(plotttinggene)
-            rownames(plotttinggene) <- NULL
-            finalmatrix <- merge(plotttinggene, bysubtype, by="UPN")
+            plottinggene <- tcga[,colnames(tcga) %in% bysubtype$UPN]
+            plottinggene <- t(plottinggene)
+            plottinggene <- as.data.frame(plottinggene)
+            plottinggene$UPN <- rownames(plottinggene)
+            rownames(plottinggene) <- NULL
+            finalmatrix <- merge(plottinggene, bysubtype, by="UPN")
             finalmatrix <- finalmatrix[,c(2,3,4,5,6)]
             colnames(finalmatrix) <- c("Log2.Expression","Name","TCGA_ID","TCGA_Name","FAB")
             levels(finalmatrix$FAB) <- c("Healthy Donor CD19","Healthy Donor CD3","Healthy Donor CD34","Healthy Donor Monocytes","Healthy Donor Neutrophils","Healthy Donor Promylocytes","M0","M1","M2","M3","M4","M5")
@@ -884,12 +970,12 @@ shinyApp (
             rownames(tcga) = tcga$gene
             tcga <- tcga[,-1]
             bysubtype <- filter(clinicaldata_mrna, clinicaldata_mrna$Cyto_Risk %in% subtypesToPlot)
-            plotttinggene <- tcga[,colnames(tcga) %in% bysubtype$UPN]
-            plotttinggene <- t(plotttinggene)
-            plotttinggene <- as.data.frame(plotttinggene)
-            plotttinggene$UPN <- rownames(plotttinggene)
-            rownames(plotttinggene) <- NULL
-            finalmatrix <- merge(plotttinggene, bysubtype, by="UPN")
+            plottinggene <- tcga[,colnames(tcga) %in% bysubtype$UPN]
+            plottinggene <- t(plottinggene)
+            plottinggene <- as.data.frame(plottinggene)
+            plottinggene$UPN <- rownames(plottinggene)
+            rownames(plottinggene) <- NULL
+            finalmatrix <- merge(plottinggene, bysubtype, by="UPN")
             finalmatrix <- finalmatrix[,c(2,3,4,5,7)]
             colnames(finalmatrix) <- c("Log2.Expression","Name","TCGA_ID","TCGA_Name","Cyto_risk")
             levels(finalmatrix$Cyto_risk) <- c("Favourable","Healthy Donor CD19","Healthy Donor CD3","Healthy Donor CD34","Healthy Donor Monocytes","Healthy Donor Neutrophils","Healthy Donor Promylocytes","Intermediate","Adverse")
@@ -930,12 +1016,12 @@ shinyApp (
             rownames(tcga) = tcga$gene
             tcga <- tcga[,-1]
             bysubtype <- filter(clinicaldata_mrna, clinicaldata_mrna$Fusion %in% subtypesToPlot)
-            plotttinggene <- tcga[,colnames(tcga) %in% bysubtype$UPN]
-            plotttinggene <- t(plotttinggene)
-            plotttinggene <- as.data.frame(plotttinggene)
-            plotttinggene$UPN <- rownames(plotttinggene)
-            rownames(plotttinggene) <- NULL
-            finalmatrix <- merge(plotttinggene, bysubtype, by="UPN")
+            plottinggene <- tcga[,colnames(tcga) %in% bysubtype$UPN]
+            plottinggene <- t(plottinggene)
+            plottinggene <- as.data.frame(plottinggene)
+            plottinggene$UPN <- rownames(plottinggene)
+            rownames(plottinggene) <- NULL
+            finalmatrix <- merge(plottinggene, bysubtype, by="UPN")
             finalmatrix <- finalmatrix[,c(2,3,4,5,8)]
             colnames(finalmatrix) <- c("Log2.Expression","Name","TCGA_ID","TCGA_Name","Fusion")
             levels(finalmatrix$Fusion) <- c("BCR-ABL","CBFB-MYH11","Healthy Donor CD19","Healthy Donor CD3","Healthy Donor CD34","Healthy Donor Monocytes","Healthy Donor Neutrophils","Healthy Donor Promylocytes","MLL-X","AML without Fusion","NUP98-NSD1","PML-RARA","RUNX1-RUNX1T1")
