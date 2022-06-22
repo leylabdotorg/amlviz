@@ -157,31 +157,39 @@ shinyApp (
     # MULTIPLOT #
     output$multigene_plot_tmt <- renderPlotly({
       # Getting actual genes to plot
-      #genesToPlot <- input$single_gene_name_1_t
-      genesToPlot <- c("DNMT3A","TP53")
+      genesToPlot <- input$single_gene_name_1_t
+      #genesToPlot <- c("DNMT3A","TP53")
       if(length(genesToPlot) > 0)
       {
-        tcga = NULL
+        # TODO: Make db a Variable 
+        #SELECT UPN,Gene,Value FROM Genes WHERE (Gene='DNMT3A' OR Gene='TP53') AND Type='TMT';
+        query <- "SELECT UPN,Gene,Value FROM Genes WHERE ("
         for(g in genesToPlot){
-          tcga = rbind(tcga,read.table(paste0("/home/payton/research/washu/TCGA_Proteomics_App/Prep/TCGA_Proteomics_app/Gene_files/TMT/",g,".tsv"),sep="\t",stringsAsFactors=F,header=T,check.names=FALSE))
-          #tcga = rbind(tcga,read.table(paste0("https://storage.googleapis.com/tcga_shiny/TCGA_Proteomics_app/Gene_files/TMT/",g,".tsv"),sep="\t",stringsAsFactors=F,header=T,check.names=FALSE))
-          #SELECT Gene,UPN,Value FROM Genes WHERE (Gene='DNMT3A' OR Gene='TP53') AND Type='TMT';
+          query <- paste(query,sep="","Gene='",g,"'"," OR ")
         }
+        query <- paste(sep="",substring(query,1, nchar(query)-4),")")
+        query <- paste(query,"AND Type='TMT';") # Make variable for TMT
+        tcga <- dbGetQuery(database,query)
         
-        # Data cleanup and preparing for output
-        df = melt(tcga,id.vars="gene")
-        names(df) <- c("Gene", "UPN", "Log2.Expression")
-        df <- merge(df, clinicaldata_tmt, by="UPN") # SELECT * FROM TMT_Clinical WHERE (UPN="ND8" OR ...);
+        
+        # SELECT * FROM TMT_Clinical WHERE (UPN="ND8" OR ...);
+        query <- "SELECT * FROM TMT_Clinical WHERE ("
+        for(g in unique(tcga$UPN)){
+          query <- paste(query,sep="","UPN='",g,"'"," OR ")
+        }
+        query <- paste(sep="",substring(query,1, nchar(query)-4),");")
+        df <- dbGetQuery(database,query)
+        df <- merge(tcga, df, by="UPN")
         dmtm <<- df
         
-        g <- ggplot(df,aes(fill=Gene, y=Log2.Expression, x=Name, text = paste0("UPN ID: ",UPN,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_bar(position="dodge", stat="identity") + theme_bw() +
+        
+        g <- ggplot(df,aes(fill=Gene, y=Value, x=Name, text = paste0("UPN ID: ",UPN,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_bar(position="dodge", stat="identity") + theme_bw() +
           theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=10, family="avenir", face="bold"), 
                 axis.title=element_text(size=12, family="avenir", face="bold"),
                 axis.text.x = element_text(angle = 90, hjust = 1)) +
           ggtitle("Multiple protein view") +
           ylab("Log2 Expression") + xlab("")
         ggplotly(g, tooltip="text")
-        
       }
     })
     
@@ -190,7 +198,6 @@ shinyApp (
       filename = function() {paste0("Output.csv")},
       content = function(file) {write.csv(dmtm, file, quote = F, row.names = F, sep = ",")}
     )
-    
     
     
     
