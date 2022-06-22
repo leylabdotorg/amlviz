@@ -201,57 +201,44 @@ shinyApp (
     
     
     
-    
-    
-    
-    
     # SUBTYPE #
     output$singlegene_plot_subtype_tmt <- renderPlotly({
       # Getting actual genes to plot
-      #genesToPlot <- toupper(input$single_gene_name_2_t)
-      #subtypesToPlot <- input$subtypes_t
-      genesToPlot <- "TP53"
-      subtypesToPlot <- c("M0","M1","M2","M3","M4","M5","Healthy Lin-")
-      tcga = NULL
+      genesToPlot <- toupper(input$single_gene_name_2_t)
+      subtypesToPlot <- input$subtypes_t
+      #genesToPlot <- "TP53"
+      #subtypesToPlot <- c("M0","M1","M2","M3","M4","M5","Healthy Lin-")
       if(length(subtypesToPlot) > 0)
       {
         if(nchar(genesToPlot) > 0)
         {
-          destfile = paste0("https://storage.googleapis.com/tcga_shiny/TCGA_Proteomics_app/Gene_files/TMT/",genesToPlot,".tsv")
-          #destfile = paste0("../Preps for the apps/TCGA Proteomics data/Latest_dataset_nolog/",genesToPlot,".tsv")
-          if(url.exists(destfile))
-          {
-            #tcga = as.data.frame(read.table(file = paste0("https://storage.googleapis.com/tcga_shiny/TCGA_Proteomics_app/Gene_files/TMT/",genesToPlot,".tsv"), header = TRUE, stringsAsFactors = F,check.names=FALSE))
-            tcga = as.data.frame(read.table(file = paste0("/home/payton/research/washu/TCGA_Proteomics_App/Prep/TCGA_Proteomics_app/Gene_files/TMT/",genesToPlot,".tsv"), header = TRUE, stringsAsFactors = F,check.names=FALSE))
-            rownames(tcga) = tcga$gene
-            tcga <- tcga[,-1] # SELECT Value FROM Genes WHERE Gene="TP53"; (Replace TP53 with all genes selected)
-            
-            
-            bysubtype <- filter(clinicaldata_tmt, clinicaldata_tmt$FAB %in% subtypesToPlot) # Selects only observations with FAB that is in subtypesToPlot (just clinical data)
-            plottinggene <- tcga[,colnames(tcga) %in% bysubtype$UPN]
-            plottinggene <- t(plottinggene)
-            plottinggene <- as.data.frame(plottinggene)
-            plottinggene$UPN <- rownames(plottinggene)
-            rownames(plottinggene) <- NULL
-            # plottinggene shape is || Values | UPN ||
-            
-            
-            # Data cleanup and preparing for output
-            finalmatrix <- merge(plottinggene, bysubtype, by="UPN")
-            finalmatrix <- finalmatrix[,c(2,3,4,5,6)]
-            colnames(finalmatrix) <- c("Log2.Expression","Name","TCGA_ID","TCGA_Name","FAB")
-            finalmatrix$FAB <- factor(finalmatrix$FAB,levels=c("M0","M1","M2","M3","M4","M5","Healthy Lin-"))
-            finalmatrix$Gene <- genesToPlot
-            finalmatrix <- finalmatrix[,c(2,3,4,5,1,6)]
-            dmts <<- finalmatrix
-            
-            g <- ggplot(finalmatrix,aes(FAB, Log2.Expression, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
-              ggtitle(paste0("Log2 Expression for ",genesToPlot)) + 
-              theme(text=element_text(size=12, family="avenir", face="bold"), 
-                    axis.text=element_text(size=12, family="avenir", face="bold")) +
-              ylab("Log2 Expression") + xlab("")
-            ggplotly(g, tooltip="text")
+          #SELECT Value,UPN FROM Genes WHERE Gene="TP53" AND Type='TMT'; (Replace TP53 with all genes selected)
+          query <- paste(sep="","SELECT Value,UPN FROM Genes WHERE Gene='",genesToPlot, "' AND Type='TMT';")
+          tcga <- dbGetQuery(database,query)
+          
+          
+          #SELECT UPN, Name, TCGA_ID, TCGA_Name, FAB FROM TMT_Clinical WHERE (FAB='M0' OR FAB='M1' OR FAB='M2' OR FAB='M3' OR FAB='M4' OR FAB='M5' OR FAB='Healthy Lin-');
+          query <- "SELECT UPN, Name, TCGA_ID, TCGA_Name, FAB FROM TMT_Clinical WHERE ("
+          for(g in subtypesToPlot){
+            query <- paste(query,sep="","FAB='",g,"'"," OR ")
           }
+          query <- paste(sep="",substring(query,1, nchar(query)-4),");")
+          df <- dbGetQuery(database,query)
+          
+          
+          df <- merge(df,tcga, by="UPN")
+          df$Gene <- genesToPlot
+          df <- subset(df, select = -c(UPN) ) # For some reason in the original implementation UPN was dropped
+          dmts <<- df
+          
+          
+          # TODO: Weird behavior where Healthy goes before Ms (Most likely has something to do with alphabetical order)
+          g <- ggplot(df,aes(FAB, Value, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
+            ggtitle(paste0("Log2 Expression for ",genesToPlot)) + 
+            theme(text=element_text(size=12, family="avenir", face="bold"), 
+                  axis.text=element_text(size=12, family="avenir", face="bold")) +
+            ylab("Log2 Expression") + xlab("")
+          ggplotly(g, tooltip="text")
         }
       }
     })
