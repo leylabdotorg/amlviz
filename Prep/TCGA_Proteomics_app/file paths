@@ -1,0 +1,28 @@
+#Common files
+dropdowngenes <- read.table(file = "https://storage.googleapis.com/tcga_shiny/TCGA_Proteomics_dataset/Data_files/mutation_specific_genes.txt", sep="\t", skipNul=T, encoding="UTF-8", quote = "")
+print("Read - drop-down mutation gene")
+mutation_table <- read.table(file = "https://storage.googleapis.com/tcga_shiny/TCGA_Proteomics_dataset/Data_files/mutations.txt", header=T, sep="\t", skipNul=T, encoding="UTF-8", quote = "")
+print("Read - mutation file")
+# TMT Files
+genenames_tmt = read.table(file = "https://storage.googleapis.com/tcga_shiny/TCGA_Proteomics_dataset/Data_files/TMT/genenames.txt", stringsAsFactors=F, header=F, sep="\t", skipNul=T, encoding="UTF-8", quote = "")
+print("Read - gene file for TMT")
+clinicaldata_tmt <- read.table(file = "https://storage.googleapis.com/tcga_shiny/TCGA_Proteomics_dataset/Data_files/TMT/clinical.txt", header=T, sep="\t", skipNul=T, encoding="UTF-8", quote = "")
+print("Read - clinical data for TMT")
+# LFQ Files
+genenames_lfq = read.table(file = "https://storage.googleapis.com/tcga_shiny/TCGA_Proteomics_dataset/Data_files/LFQ/genenames.txt",stringsAsFactors=F, header=F, sep="\t", skipNul=T, encoding="UTF-8", quote = "")
+print("Read - gene file for LFQ")
+clinicaldata_lfq <- read.table(file = "https://storage.googleapis.com/tcga_shiny/TCGA_Proteomics_dataset/Data_files/LFQ/clinical.txt", header=T, sep="\t", skipNul=T, encoding="UTF-8", quote = "")
+print("Read - clinical data for LFQ")
+# Phospho Files
+genenames_pho = read.table(file = "https://storage.googleapis.com/tcga_shiny/TCGA_Proteomics_dataset/Data_files/Phospho/genenames.txt", stringsAsFactors=F, header=F, skipNul=T, encoding="UTF-8", quote = "")
+print("Read - gene file for Phospho")
+clinicaldata_pho <- read.table(file = "https://storage.googleapis.com/tcga_shiny/TCGA_Proteomics_dataset/Data_files/Phospho/clinical.txt", header=T, sep="\t", skipNul=T, encoding="UTF-8", quote = "")
+print("Read - clinical data for Phospho")
+# mRNA Files
+genenames_mrna = read.table(file = "https://storage.googleapis.com/tcga_shiny/TCGA_Proteomics_dataset/Data_files/mRNA/genenames.txt", stringsAsFactors=F, header=F, sep="\t", skipNul=T, encoding="UTF-8", quote = "")
+print("Read - gene file for mRNA")
+clinicaldata_mrna <- read.table(file = "https://storage.googleapis.com/tcga_shiny/TCGA_Proteomics_dataset/Data_files/mRNA/clinical.txt", header=T, sep = "\t", skipNul=T, encoding="UTF-8", quote = "")
+print("Read - clinical data for mRNA")
+# correlation files
+genenames_corr = read.table("https://storage.googleapis.com/tcga_shiny/TCGA_Proteomics_dataset/Data_files/correlation_genes.txt", stringsAsFactors=F, header=F, sep = "\t", skipNul=T, encoding="UTF-8", quote = "")
+print("Read - correlation gene matrix")

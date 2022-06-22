@@ -1,0 +1,41 @@
+.navbar-default .navbar-brand {
+  font-weight:bold;
+}
+
+input[type="number"] {
+  max-width: 100%;
+}
+
+div.outer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  padding: 0;
+  align:justify;
+}
+
+/* Customize fonts */
+title{
+  font-weight:bold;
+  align:justify;
+  color: #283C54;
+}
+body, label, input, button, select {
+  font-family: 'Helvetica Neue', Helvetica;
+  font-size: 15px;
+  align:justify;
+  color: black;
+}
+h1, h2, h3, h4 {
+  font-weight:bold;
+  align:justify;
+  color: #283C54;
+}
+h5 {
+  font-weight:bold;
+  align:justify;
+  font-style: italic;
+  color: #283C54;
+}
