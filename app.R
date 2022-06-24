@@ -350,16 +350,6 @@ shinyApp (
     
     
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     # MUTATION #
     output$singlegene_plot_mutation_tmt <- renderPlotly({
       normalgenes <- toupper(input$single_gene_name_5_t)
@@ -369,60 +359,53 @@ shinyApp (
       tcga = NULL
       if(normalgenes != "")
       {
-        #destfile = paste0("../Preps for the apps/TCGA Proteomics data/Latest_dataset_nolog/",normalgenes,".tsv")
-        destfile = paste0("https://storage.googleapis.com/tcga_shiny/TCGA_Proteomics_app/Gene_files/TMT/",normalgenes,".tsv")
-        if(url.exists(destfile))
-        {
-          tcga = as.data.frame(read.table(file = paste0("https://storage.googleapis.com/tcga_shiny/TCGA_Proteomics_app/Gene_files/TMT/",normalgenes,".tsv"), header = TRUE, stringsAsFactors = F,check.names=FALSE))
-          #tcga = as.data.frame(read.table(file = paste0("../AML_proteomics-tmp/TCGA_Proteomics_app/Gene_files/TMT/",normalgenes,".tsv"), header = TRUE, stringsAsFactors = F,check.names=FALSE))
-          tcga <- melt(tcga, id.vars=c("gene"))
-          colnames(tcga) <- c("Gene","UPN","Expression")
-          tcga$Gene <- genesToPlot
-          tcga$Group <- "WT"
-          upns_with_mut <- as.character(mutation_table$UPN[which(mutation_table$Gene %in% genesToPlot)])
-          upns_with_health <- as.character(clinicaldata_tmt$UPN[which(clinicaldata_tmt$TCGA_Name %like% "Healthy")])
-          tcga$Group[tcga$UPN %in% upns_with_mut] <- "MT"
-          for(i in upns_with_health)
-          {
-            newvalue <- as.character(clinicaldata_tmt$FAB[clinicaldata_tmt$UPN == i])
-            tcga$Group[tcga$UPN == i] <- newvalue
-          }
-          tcga_wt <- tcga[which(tcga$Group == "WT" ),c(2,1,3,4)]
-          tcga_wt$Mutation <- paste0(genesToPlot," WT", sep = "")
-          tcga_he <- tcga[!tcga$Group %in% c("WT","MT"),c(2,1,3,4)]
-          tcga_he$Mutation <- tcga_he$Group
-          tcga_mt <- tcga[which(tcga$Group == "MT" ),c(1,2,3)]
-          finalmatrix <- merge(tcga_mt,mutation_table, by=c("UPN","Gene"))
-          finalmatrix <- rbind(finalmatrix,tcga_wt,tcga_he)
-          finaldata <- merge(finalmatrix, clinicaldata_tmt, by=c("UPN"))
-          finaldata <- finaldata[,c(1,2,3,4,5,6,7)]
-          names(finaldata) <- c("UPN","Gene","Log2.Expression","Group","Mutation","Name","TCGA")
-          finaldata <- finaldata[,c(1,6,7,4,5,3,2)]
-          finaldata$Gene <- normalgenes
-          dmtw <<- finaldata
-          g <- ggplot(finaldata,aes(Group, Log2.Expression, text = paste0("UPN ID: ",Name,"<br />Mutation type: ", Mutation,"<br />TCGA Sample ID: ", TCGA))) + 
-            geom_quasirandom(size = 0.8) + 
-            theme_bw() +
-            ggtitle(paste0("Log2 Expression for ",normalgenes," with ",genesToPlot, ": WT|MT")) + 
-            theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=12, family="avenir", face="bold"),axis.text.x = element_text(angle = 45, hjust = 1)) +
-            ylab("Log2 Expression") + xlab("")
-          ggplotly(g, tooltip="text")
+        query <- paste(sep="","SELECT UPN,Value FROM Genes WHERE Gene='",normalgenes, "' AND Type='TMT';")
+        tcga <- dbGetQuery(database,query)
+        tcga <- cbind(Gene = genesToPlot, tcga)
+        tcga$Group <- "WT"
+        tcga$UPN <- as.factor(tcga$UPN)
+        
+        upns_with_mut <- as.character(mutation_table$UPN[which(mutation_table$Gene %in% genesToPlot)])
+        upns_with_health <- as.character(clinicaldata_tmt$UPN[which(clinicaldata_tmt$TCGA_Name %like% "Healthy")])
+        tcga$Group[tcga$UPN %in% upns_with_mut] <- "MT"
+        for(upn in upns_with_health) {
+          query <- paste(sep="","SELECT FAB FROM TMT_Clinical WHERE UPN='", upn, "';")
+          value <- as.character(dbGetQuery(database,query))
+          tcga$Group[tcga$UPN == upn] <- value
         }
+        
+        
+        tcga_wt <- tcga[which(tcga$Group == "WT" ),c(2,1,3,4)]
+        tcga_wt$Mutation <- paste0(genesToPlot," WT", sep = "")
+        tcga_he <- tcga[!tcga$Group %in% c("WT","MT"),c(2,1,3,4)]
+        tcga_he$Mutation <- tcga_he$Group
+        tcga_mt <- tcga[which(tcga$Group == "MT" ),c(1,2,3)]
+        
+        
+        df <- merge(tcga_mt,mutation_table, by=c("UPN","Gene"))
+        df <- rbind(df,tcga_wt,tcga_he)
+        finaldf <- merge(df, clinicaldata_tmt, by=c("UPN"))
+        finaldf <- finaldf[,c(1,2,3,4,5,6,7)]
+        names(finaldf) <- c("UPN","Gene","Log2.Expression","Group","Mutation","Name","TCGA")
+        finaldf <- finaldf[,c(1,6,7,4,5,3,2)]
+        finaldf$Gene <- normalgenes
+        dmtw <<- finaldf
+        
+        
+        g <- ggplot(finaldf,aes(Group, Log2.Expression, text = paste0("UPN ID: ",Name,"<br />Mutation type: ", Mutation,"<br />TCGA Sample ID: ", TCGA))) + 
+          geom_quasirandom(size = 0.8) + 
+          theme_bw() +
+          ggtitle(paste0("Log2 Expression for ",normalgenes," with ",genesToPlot, ": WT|MT")) + 
+          theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=12, family="avenir", face="bold"),axis.text.x = element_text(angle = 45, hjust = 1)) +
+          ylab("Log2 Expression") + xlab("")
+        ggplotly(g, tooltip="text")
       }
     })
     output$downloadData_t_w <- downloadHandler(
       filename = function() {paste0("Output.csv")},
       content = function(file) {write.csv(dmtw, file, quote = F, row.names = F, sep = "\t")}
     )
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
     ###### LFQ APP STUFF ######
     # Updating the selectize options
     updateSelectizeInput(session, 'single_gene_name_1_l', choices = genenames_lfq$V1, server = TRUE)
@@ -1082,7 +1065,7 @@ shinyApp (
       #genesToPlot <- c("TP53")
       if(length(genesToPlot) > 0)
       {
-        tcga1 = NULL
+        tcga = NULL
         tcga2 = NULL
         for(g in genesToPlot){
           #tcga1 = rbind(tcga1,read.table(paste0("../AML_proteomics-tmp/TCGA_Proteomics_app/Gene_files/TMT/",g,".tsv"),sep="\t",stringsAsFactors=F,header=T,check.names=FALSE))
