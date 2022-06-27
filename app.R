@@ -172,13 +172,13 @@ shinyApp (
         query <- "SELECT * FROM TMT_Clinical WHERE ("
         upnQuery <- paste("UPN='", unique((tcga$UPN)),"'",sep="",collapse=" OR ")
         query <- paste(query,upnQuery,");",sep="")
-        df <- dbGetQuery(database,query)
+        clinical <- dbGetQuery(database,query)
         
-        df <- merge(tcga, df, by="UPN")
-        dmtm <<- df
+        clinical <- merge(tcga, clinical, by="UPN")
+        dmtm <<- clinical
 
 
-        g <- ggplot(df,aes(fill=Gene, y=Value, x=Name, text = paste0("UPN ID: ",UPN,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_bar(position="dodge", stat="identity") + theme_bw() +
+        g <- ggplot(clinical,aes(fill=Gene, y=Value, x=Name, text = paste0("UPN ID: ",UPN,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_bar(position="dodge", stat="identity") + theme_bw() +
           theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=10, family="avenir", face="bold"),
                 axis.title=element_text(size=12, family="avenir", face="bold"),
                 axis.text.x = element_text(angle = 90, hjust = 1)) +
@@ -215,16 +215,16 @@ shinyApp (
           query <- "SELECT UPN, Name, TCGA_ID, TCGA_Name, FAB FROM TMT_Clinical WHERE ("
           subtypesQuery <- paste("FAB='",subtypesToPlot,"'",sep="",collapse=" OR ")
           query <- paste(query,subtypesQuery,");",sep="")
-          df <- dbGetQuery(database,query)
+          clinical <- dbGetQuery(database,query)
 
-          df <- merge(df,tcga, by="UPN")
-          df$Gene <- genesToPlot
-          df <- subset(df, select = -c(UPN) ) # For some reason in the original implementation UPN was dropped
-          dmts <<- df
+          clinical <- merge(clinical,tcga, by="UPN")
+          clinical$Gene <- genesToPlot
+          clinical <- subset(clinical, select = -c(UPN) ) # For some reason in the original implementation UPN was dropped
+          dmts <<- clinical
           
 
           # TODO: Weird behavior where Healthy goes before Ms (Most likely has something to do with alphabetical order)
-          g <- ggplot(df,aes(FAB, Value, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
+          g <- ggplot(clinical,aes(FAB, Value, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
             ggtitle(paste0("Log2 Expression for ",genesToPlot)) +
             theme(text=element_text(size=12, family="avenir", face="bold"),
                   axis.text=element_text(size=12, family="avenir", face="bold")) +
@@ -262,18 +262,18 @@ shinyApp (
           query <- "SELECT UPN, Name, TCGA_ID, TCGA_Name, Cyto_Risk FROM TMT_Clinical WHERE ("
           subtypesQuery <- paste("Cyto_Risk='",subtypesToPlot,"'",sep="",collapse=" OR ")
           query <- paste(query,subtypesQuery,");",sep="")
-          df <- dbGetQuery(database,query)
+          clinical <- dbGetQuery(database,query)
 
-          df <- merge(df,tcga, by="UPN")
-          df$Gene <- genesToPlot
-          df <- subset(df, select = -c(UPN) ) # For some reason in the original implementation UPN was dropped
-          levels(df$Cyto_Risk) <- c("Favorable","Healthy Lin-","Intermediate","Adverse")
-          df$Cyto_Risk <- factor(df$Cyto_Risk,levels=c("Favorable","Intermediate","Adverse","Healthy Lin-"))
-          df <- df[,c(2,3,4,5,1,6)]
-          dmtc <<- df
+          clinical <- merge(clinical,tcga, by="UPN")
+          clinical$Gene <- genesToPlot
+          clinical <- subset(clinical, select = -c(UPN) ) # For some reason in the original implementation UPN was dropped
+          levels(clinical$Cyto_Risk) <- c("Favorable","Healthy Lin-","Intermediate","Adverse")
+          clinical$Cyto_Risk <- factor(clinical$Cyto_Risk,levels=c("Favorable","Intermediate","Adverse","Healthy Lin-"))
+          clinical <- clinical[,c(2,3,4,5,1,6)]
+          dmtc <<- clinical
 
 
-          g <- ggplot(df,aes(Cyto_Risk, Value, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
+          g <- ggplot(clinical,aes(Cyto_Risk, Value, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
             ggtitle(paste0("Log2 Expression for ",genesToPlot)) +
             theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=12, family="avenir", face="bold")) +
             ylab("Log2 Expression") + xlab("")
@@ -307,18 +307,18 @@ shinyApp (
           query <- "SELECT UPN, Name, TCGA_ID, TCGA_Name, Fusion FROM TMT_Clinical WHERE ("
           subtypesQuery <- paste("Fusion='",subtypesToPlot,"'",sep="",collapse=" OR ")
           query <- paste(query,subtypesQuery,");",sep="")
-          df <- dbGetQuery(database,query)
+          clinical <- dbGetQuery(database,query)
 
-          df <- merge(df,tcga, by="UPN")
-          df$Gene <- genesToPlot
-          df <- subset(df, select = -c(UPN) ) # For some reason in the original implementation UPN was dropped
-          df$Fusion <- factor(df$Fusion,levels=c("CBFB","RUNX1","PML","MLL","NSD1","BCR-ABL1","Normal","Healthy Lin-"))
-          levels(df$Fusion) <- c("CBFB-MYH11","RUNX1-RUNX1T1","PML-RARA","MLL-X","NUP98-NSD1","BCR-ABL","AML without Fusion","Healthy Donor Lin-")
-          df <- df[,c(2,3,4,5,1,6)]
-          dmts <<- df
+          clinical <- merge(clinical,tcga, by="UPN")
+          clinical$Gene <- genesToPlot
+          clinical <- subset(clinical, select = -c(UPN) ) # For some reason in the original implementation UPN was dropped
+          clinical$Fusion <- factor(clinical$Fusion,levels=c("CBFB","RUNX1","PML","MLL","NSD1","BCR-ABL1","Normal","Healthy Lin-"))
+          levels(clinical$Fusion) <- c("CBFB-MYH11","RUNX1-RUNX1T1","PML-RARA","MLL-X","NUP98-NSD1","BCR-ABL","AML without Fusion","Healthy Donor Lin-")
+          clinical <- clinical[,c(2,3,4,5,1,6)]
+          dmts <<- clinical
 
 
-          g <- ggplot(df,aes(Fusion, Value, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
+          g <- ggplot(clinical,aes(Fusion, Value, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
             ggtitle(paste0("Log2 Expression for ",genesToPlot)) +
             theme(text=element_text(size=12, family="avenir", face="bold"),axis.text=element_text(size=12, family="avenir", face="bold"), axis.text.x = element_text(angle = 45)) +
             ylab("Log2 Expression") + xlab("")
@@ -367,17 +367,17 @@ shinyApp (
         tcga_mt <- tcga[which(tcga$Group == "MT" ),c(1,2,3)]
 
 
-        df <- merge(tcga_mt,mutation_table, by=c("UPN","Gene"))
-        df <- rbind(df,tcga_wt,tcga_he)
-        finaldf <- merge(df, clinicaldata_tmt, by=c("UPN"))
-        finaldf <- finaldf[,c(1,2,3,4,5,6,7)]
-        names(finaldf) <- c("UPN","Gene","Log2.Expression","Group","Mutation","Name","TCGA")
-        finaldf <- finaldf[,c(1,6,7,4,5,3,2)]
-        finaldf$Gene <- normalgenes
-        dmtw <<- finaldf
+        clinical <- merge(tcga_mt,mutation_table, by=c("UPN","Gene"))
+        clinical <- rbind(clinical,tcga_wt,tcga_he)
+        finalclinical <- merge(clinical, clinicaldata_tmt, by=c("UPN"))
+        finalclinical <- finalclinical[,c(1,2,3,4,5,6,7)]
+        names(finalclinical) <- c("UPN","Gene","Log2.Expression","Group","Mutation","Name","TCGA")
+        finalclinical <- finalclinical[,c(1,6,7,4,5,3,2)]
+        finalclinical$Gene <- normalgenes
+        dmtw <<- finalclinical
 
 
-        g <- ggplot(finaldf,aes(Group, Log2.Expression, text = paste0("UPN ID: ",Name,"<br />Mutation type: ", Mutation,"<br />TCGA Sample ID: ", TCGA))) +
+        g <- ggplot(finalclinical,aes(Group, Log2.Expression, text = paste0("UPN ID: ",Name,"<br />Mutation type: ", Mutation,"<br />TCGA Sample ID: ", TCGA))) +
           geom_quasirandom(size = 0.8) +
           theme_bw() +
           ggtitle(paste0("Log2 Expression for ",normalgenes," with ",genesToPlot, ": WT|MT")) +
