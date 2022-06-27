@@ -164,21 +164,16 @@ shinyApp (
         # TODO: Make db a Variable
         #SELECT UPN,Gene,Value FROM Genes WHERE (Gene='DNMT3A' OR Gene='TP53') AND Type='TMT';
         query <- "SELECT UPN,Gene,Value FROM Genes WHERE ("
-        for(g in genesToPlot){
-          query <- paste(query,sep="","Gene='",g,"'"," OR ")
-        }
-        query <- paste(sep="",substring(query,1, nchar(query)-4),")")
-        query <- paste(query,"AND Type='TMT';") # Make variable for TMT
+        geneQuery <- paste("Gene='",genesToPlot,"'",sep="",collapse=" OR ")
+        query <- paste(query,geneQuery,") ","AND Type='TMT';",sep="")
         tcga <- dbGetQuery(database,query)
-
 
         # SELECT * FROM TMT_Clinical WHERE (UPN="ND8" OR ...);
         query <- "SELECT * FROM TMT_Clinical WHERE ("
-        for(g in unique(tcga$UPN)){
-          query <- paste(query,sep="","UPN='",g,"'"," OR ")
-        }
-        query <- paste(sep="",substring(query,1, nchar(query)-4),");")
+        upnQuery <- paste("UPN='", unique((tcga$UPN)),"'",sep="",collapse=" OR ")
+        query <- paste(query,upnQuery,");",sep="")
         df <- dbGetQuery(database,query)
+        
         df <- merge(tcga, df, by="UPN")
         dmtm <<- df
 
@@ -213,24 +208,20 @@ shinyApp (
         if(nchar(genesToPlot) > 0)
         {
           #SELECT Value,UPN FROM Genes WHERE Gene="TP53" AND Type='TMT'; (Replace TP53 with all genes selected)
-          query <- paste(sep="","SELECT Value,UPN FROM Genes WHERE Gene='",genesToPlot, "' AND Type='TMT';")
+          query <- paste("SELECT Value,UPN FROM Genes WHERE Gene='",genesToPlot, "' AND Type='TMT';",sep="")
           tcga <- dbGetQuery(database,query)
-
 
           #SELECT UPN, Name, TCGA_ID, TCGA_Name, FAB FROM TMT_Clinical WHERE (FAB='M0' OR FAB='M1' OR FAB='M2' OR FAB='M3' OR FAB='M4' OR FAB='M5' OR FAB='Healthy Lin-');
           query <- "SELECT UPN, Name, TCGA_ID, TCGA_Name, FAB FROM TMT_Clinical WHERE ("
-          for(g in subtypesToPlot){
-            query <- paste(query,sep="","FAB='",g,"'"," OR ")
-          }
-          query <- paste(sep="",substring(query,1, nchar(query)-4),");")
+          subtypesQuery <- paste("FAB='",subtypesToPlot,"'",sep="",collapse=" OR ")
+          query <- paste(query,subtypesQuery,");",sep="")
           df <- dbGetQuery(database,query)
-
 
           df <- merge(df,tcga, by="UPN")
           df$Gene <- genesToPlot
           df <- subset(df, select = -c(UPN) ) # For some reason in the original implementation UPN was dropped
           dmts <<- df
-
+          
 
           # TODO: Weird behavior where Healthy goes before Ms (Most likely has something to do with alphabetical order)
           g <- ggplot(df,aes(FAB, Value, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
@@ -267,15 +258,11 @@ shinyApp (
           query <- paste(sep="","SELECT Value,UPN FROM Genes WHERE Gene='",genesToPlot, "' AND Type='TMT';")
           tcga <- dbGetQuery(database,query)
 
-
           #SELECT UPN, Name, TCGA_ID, TCGA_Name, Cyto_Risk FROM TMT_Clinical WHERE (Cyto_Risk='Poor' OR Cyto_Risk='Good' OR Cyto_Risk='Intermediate' OR Cyto_Risk='Healthy Lin-');
           query <- "SELECT UPN, Name, TCGA_ID, TCGA_Name, Cyto_Risk FROM TMT_Clinical WHERE ("
-          for(g in subtypesToPlot){
-            query <- paste(query,sep="","Cyto_Risk='",g,"'"," OR ")
-          }
-          query <- paste(sep="",substring(query,1, nchar(query)-4),");")
+          subtypesQuery <- paste("Cyto_Risk='",subtypesToPlot,"'",sep="",collapse=" OR ")
+          query <- paste(query,subtypesQuery,");",sep="")
           df <- dbGetQuery(database,query)
-
 
           df <- merge(df,tcga, by="UPN")
           df$Gene <- genesToPlot
@@ -318,10 +305,8 @@ shinyApp (
           tcga <- dbGetQuery(database,query)
 
           query <- "SELECT UPN, Name, TCGA_ID, TCGA_Name, Fusion FROM TMT_Clinical WHERE ("
-          for(g in subtypesToPlot){
-            query <- paste(query,sep="","Fusion='",g,"'"," OR ")
-          }
-          query <- paste(sep="",substring(query,1, nchar(query)-4),");")
+          subtypesQuery <- paste("Fusion='",subtypesToPlot,"'",sep="",collapse=" OR ")
+          query <- paste(query,subtypesQuery,");",sep="")
           df <- dbGetQuery(database,query)
 
           df <- merge(df,tcga, by="UPN")
@@ -369,7 +354,7 @@ shinyApp (
         upns_with_health <- as.character(clinicaldata_tmt$UPN[which(clinicaldata_tmt$TCGA_Name %like% "Healthy")])
         tcga$Group[tcga$UPN %in% upns_with_mut] <- "MT"
         for(upn in upns_with_health) {
-          query <- paste(sep="","SELECT FAB FROM TMT_Clinical WHERE UPN='", upn, "';")
+          query <- paste("SELECT FAB FROM TMT_Clinical WHERE UPN='", upn, "';",sep="")
           value <- as.character(dbGetQuery(database,query))
           tcga$Group[tcga$UPN == upn] <- value
         }
