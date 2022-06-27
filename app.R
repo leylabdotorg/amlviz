@@ -173,7 +173,7 @@ shinyApp (
         upnQuery <- paste("UPN='", unique((tcga$UPN)),"'",sep="",collapse=" OR ")
         query <- paste(query,upnQuery,");",sep="")
         clinical <- dbGetQuery(database,query)
-        
+
         clinical <- merge(tcga, clinical, by="UPN")
         dmtm <<- clinical
 
@@ -219,11 +219,11 @@ shinyApp (
 
           clinical <- merge(clinical,tcga, by="UPN")
           clinical$Gene <- genesToPlot
+          clinical$FAB <- factor(clinical$FAB,levels=c("M0","M1","M2","M3","M4","M5","Healthy Lin-"))
           clinical <- subset(clinical, select = -c(UPN) ) # For some reason in the original implementation UPN was dropped
           dmts <<- clinical
-          
 
-          # TODO: Weird behavior where Healthy goes before Ms (Most likely has something to do with alphabetical order)
+
           g <- ggplot(clinical,aes(FAB, Value, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
             ggtitle(paste0("Log2 Expression for ",genesToPlot)) +
             theme(text=element_text(size=12, family="avenir", face="bold"),
