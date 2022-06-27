@@ -175,7 +175,7 @@ shinyApp (
         clinical <- dbGetQuery(database,query)
 
         clinical <- merge(tcga, clinical, by="UPN")
-        dmtm <<- clinical
+        multiplotTMT <<- clinical
 
 
         g <- ggplot(clinical,aes(fill=Gene, y=Value, x=Name, text = paste0("UPN ID: ",UPN,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_bar(position="dodge", stat="identity") + theme_bw() +
@@ -191,7 +191,7 @@ shinyApp (
     # Output file
     output$downloadData_t_m <- downloadHandler(
       filename = function() {paste0("Output.csv")},
-      content = function(file) {write.csv(dmtm, file, quote = F, row.names = F, sep = ",")}
+      content = function(file) {write.csv(multiplotTMT, file, quote = F, row.names = F, sep = ",")}
     )
 
 
@@ -221,7 +221,7 @@ shinyApp (
           clinical$Gene <- genesToPlot
           clinical$FAB <- factor(clinical$FAB,levels=c("M0","M1","M2","M3","M4","M5","Healthy Lin-"))
           clinical <- subset(clinical, select = -c(UPN) ) # For some reason in the original implementation UPN was dropped
-          dmts <<- clinical
+          subtypeTMT <<- clinical
 
 
           g <- ggplot(clinical,aes(FAB, Value, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
@@ -237,7 +237,7 @@ shinyApp (
     # Output file
     output$downloadData_t_s <- downloadHandler(
       filename = function() {paste0("Output.csv")},
-      content = function(file) {write.csv(dmts, file, quote = F, row.names = F, sep = "\t")}
+      content = function(file) {write.csv(subtypeTMT, file, quote = F, row.names = F, sep = "\t")}
     )
 
 
@@ -270,7 +270,7 @@ shinyApp (
           levels(clinical$Cyto_Risk) <- c("Favorable","Healthy Lin-","Intermediate","Adverse")
           clinical$Cyto_Risk <- factor(clinical$Cyto_Risk,levels=c("Favorable","Intermediate","Adverse","Healthy Lin-"))
           clinical <- clinical[,c(2,3,4,5,1,6)]
-          dmtc <<- clinical
+          cytogeneticsTMT <<- clinical
 
 
           g <- ggplot(clinical,aes(Cyto_Risk, Value, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
@@ -285,7 +285,7 @@ shinyApp (
     # Output file
     output$downloadData_t_c <- downloadHandler(
       filename = function() {paste0("Output.csv")},
-      content = function(file) {write.csv(dmtc, file, quote = F, row.names = F, sep = "\t")}
+      content = function(file) {write.csv(cytogeneticsTMT, file, quote = F, row.names = F, sep = "\t")}
     )
 
 
@@ -315,7 +315,7 @@ shinyApp (
           clinical$Fusion <- factor(clinical$Fusion,levels=c("CBFB","RUNX1","PML","MLL","NSD1","BCR-ABL1","Normal","Healthy Lin-"))
           levels(clinical$Fusion) <- c("CBFB-MYH11","RUNX1-RUNX1T1","PML-RARA","MLL-X","NUP98-NSD1","BCR-ABL","AML without Fusion","Healthy Donor Lin-")
           clinical <- clinical[,c(2,3,4,5,1,6)]
-          dmts <<- clinical
+          fusionTMT <<- clinical
 
 
           g <- ggplot(clinical,aes(Fusion, Value, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
@@ -330,7 +330,7 @@ shinyApp (
 
     output$downloadData_t_f <- downloadHandler(
       filename = function() {paste0("Output.csv")},
-      content = function(file) {write.csv(dmtf, file, quote = F, row.names = F, sep = "\t")}
+      content = function(file) {write.csv(fusionTMT, file, quote = F, row.names = F, sep = "\t")}
     )
 
 
@@ -374,7 +374,7 @@ shinyApp (
         names(finalclinical) <- c("UPN","Gene","Log2.Expression","Group","Mutation","Name","TCGA")
         finalclinical <- finalclinical[,c(1,6,7,4,5,3,2)]
         finalclinical$Gene <- normalgenes
-        dmtw <<- finalclinical
+        mutationTMT <<- finalclinical
 
 
         g <- ggplot(finalclinical,aes(Group, Log2.Expression, text = paste0("UPN ID: ",Name,"<br />Mutation type: ", Mutation,"<br />TCGA Sample ID: ", TCGA))) +
@@ -388,7 +388,7 @@ shinyApp (
     })
     output$downloadData_t_w <- downloadHandler(
       filename = function() {paste0("Output.csv")},
-      content = function(file) {write.csv(dmtw, file, quote = F, row.names = F, sep = "\t")}
+      content = function(file) {write.csv(mutationTMT, file, quote = F, row.names = F, sep = "\t")}
     )
 
     ###### LFQ APP STUFF ######
