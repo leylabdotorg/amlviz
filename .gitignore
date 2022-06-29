@@ -40,3 +40,6 @@ vignettes/*.pdf
 
 # Ignore macOS files
 .DS_Store
+
+# SQLite db
+*.db

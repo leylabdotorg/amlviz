@@ -10,16 +10,15 @@ library(dplyr)
 library(beeswarm)
 library(RCurl)
 library(data.table)
-library(RMariaDB)
+library(DBI)
+library(RSQLite)
 
 # database
-database <- dbConnect(RMariaDB::MariaDB(), user='payton', password='password', dbname='test', host='localhost')
+database <- dbConnect(RSQLite::SQLite(), "Proteomics.db")
 print("Connected to database")
-
 
 # database vars
 genenames_choices <- dbGetQuery(database, "SELECT Gene FROM Genes WHERE Type='TMT';")
-
 
 #Required files
 #Common files
