@@ -18,7 +18,7 @@ database <- dbConnect(RSQLite::SQLite(), "Proteomics.db")
 print("Connected to database")
 
 # database vars
-genenames_choices <- dbGetQuery(database, "SELECT Gene FROM Genes WHERE Type='TMT';")
+genenames_choices <- unique(dbGetQuery(database, "SELECT Gene FROM Genes WHERE Type='TMT';"))
 
 #Required files
 #Common files
