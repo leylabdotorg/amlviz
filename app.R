@@ -242,7 +242,6 @@ shinyApp (
 
 
     # CYTOGENETICS #
-    # TODO: Fix criteria options not showing up... Something to do with Good -> Favorable and Poor -> Adverse
     output$singlegene_plot_cytogenetics_tmt <- renderPlotly({
       genesToPlot <- toupper(input$single_gene_name_3_t)
       subtypesToPlot <- input$cytogenetics_t
@@ -267,8 +266,9 @@ shinyApp (
           clinical$Gene <- genesToPlot
           clinical <- subset(clinical, select = -c(UPN) ) # For some reason in the original implementation UPN was dropped
           levels(clinical$Cyto_Risk) <- c("Favorable","Healthy Lin-","Intermediate","Adverse")
+          clinical$Cyto_Risk[clinical$Cyto_Risk == "Good"] <- "Favorable"
+          clinical$Cyto_Risk[clinical$Cyto_Risk == "Poor"] <- "Adverse"
           clinical$Cyto_Risk <- factor(clinical$Cyto_Risk,levels=c("Favorable","Intermediate","Adverse","Healthy Lin-"))
-          clinical <- clinical[,c(2,3,4,5,1,6)]
           cytogeneticsTMT <<- clinical
 
 
