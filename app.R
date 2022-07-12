@@ -372,6 +372,11 @@ shinyApp (
           names(finaldata) <- c("UPN","Gene","Log2.Expression","Group","Mutation","Name","TCGA")
           finaldata <- finaldata[,c(1,6,7,4,5,3,2)]
           finaldata$Gene <- normalgenes
+          # levels(finaldata$Group) <- c(genesToPlot,"WT","Healthy Lin-")
+          factorLevels <- unique(finaldata$Group)
+          factorLevels <- factorLevels[! factorLevels %in% c("WT", "Healthy Lin-")]
+          factorLevels <- append(factorLevels,c("WT", "Healthy Lin-"))
+          finaldata$Group <- factor(finaldata$Group,levels=factorLevels)
           dmtw <<- finaldata
           g <- ggplot(finaldata,aes(Group, Log2.Expression, text = paste0("UPN ID: ",Name,"<br />Mutation type: ", Mutation,"<br />TCGA Sample ID: ", TCGA))) +
             geom_quasirandom(size = 0.8) +
@@ -594,6 +599,10 @@ shinyApp (
           names(finaldata) <- c("UPN","Gene","Expression","Group","Mutation","Name","TCGA")
           finaldata <- finaldata[,c(1,6,7,4,5,3,2)]
           finaldata$Gene <- normalgenes
+          factorLevels <- unique(finaldata$Group)
+          factorLevels <- factorLevels[! factorLevels %in% c("WT","Healthy CD34", "Healthy Lin-")]
+          factorLevels <- append(factorLevels,c("WT","Healthy CD34", "Healthy Lin-"))
+          finaldata$Group <- factor(finaldata$Group,levels=factorLevels)
           dmlw <<- finaldata
           g <- ggplot(finaldata,aes(Group, Expression, text = paste0("UPN ID: ",Name,"<br />Mutation type: ", Mutation,"<br />TCGA Sample ID: ", TCGA))) +
             geom_quasirandom(size = 0.8) +
@@ -795,6 +804,10 @@ shinyApp (
           finalmatrix <- merge(tcga_mt,mutation_table, by=c("UPN","Gene"))
           finalmatrix <- rbind(finalmatrix,tcga_wt,tcga_he)
           finaldata <- merge(finalmatrix, clinicaldata_pho, by=c("UPN"))
+          factorLevels <- unique(finaldata$Group)
+          factorLevels <- factorLevels[! factorLevels %in% c("WT", "Healthy Lin-")]
+          factorLevels <- append(factorLevels,c("WT", "Healthy Lin-"))
+          finaldata$Group <- factor(finaldata$Group,levels=factorLevels)
           dmpw <<- finaldata
           g <- ggplot(finaldata,aes(Group, Expression, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID,"<br />TCGA Sample Name: ", TCGA_Name,"<br />Mutation: ", Mutation))) +
             geom_quasirandom(size = 0.8) + facet_wrap(~ Phosphosite) +
@@ -1020,6 +1033,10 @@ shinyApp (
           finaldata <- finaldata[,c(1,2,3,4,5,6,7)]
           names(finaldata) <- c("UPN","Gene","Log2.Expression","Group","Mutation","Name","TCGA")
           finaldata$Gene <- normalgenes
+          factorLevels <- unique(finaldata$Group)
+          factorLevels <- factorLevels[! factorLevels %in% c("WT","Healthy Donor CD19", "Healthy Donor CD3","Healthy Donor CD34","Healthy Donor Monocytes","Healthy Donor Neutrophils","Healthy Donor Promylocytes")]
+          factorLevels <- append(factorLevels,c("WT","Healthy Donor CD19", "Healthy Donor CD3","Healthy Donor CD34","Healthy Donor Monocytes","Healthy Donor Neutrophils","Healthy Donor Promylocytes"))
+          finaldata$Group <- factor(finaldata$Group,levels=factorLevels)
           dmmw <<- finaldata
           g <- ggplot(finaldata,aes(Group, Log2.Expression, text = paste0("UPN ID: ",Name,"<br />Mutation type: ", Mutation,"<br />TCGA Sample Name: ", TCGA))) +
             geom_quasirandom(size = 0.8) +
