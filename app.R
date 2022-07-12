@@ -21,21 +21,33 @@ print("Read - mutation file")
 genenames_tmt = read.table(file = "Data_files/TMT/genenames.txt", stringsAsFactors=F, header=F, sep="\t", skipNul=T, encoding="UTF-8", quote = "")
 print("Read - gene file for TMT")
 clinicaldata_tmt <- read.table(file = "Data_files/TMT/clinical.txt", header=T, sep="\t", skipNul=T, encoding="UTF-8", quote = "")
+clinicaldata_tmt$Cyto_Risk[clinicaldata_tmt$Cyto_Risk == "Good"] <- "Favorable"
+clinicaldata_tmt$Cyto_Risk[clinicaldata_tmt$Cyto_Risk == "Poor"] <- "Adverse"
 print("Read - clinical data for TMT")
 # LFQ Files
 genenames_lfq = read.table(file = "Data_files/LFQ/genenames.txt",stringsAsFactors=F, header=F, sep="\t", skipNul=T, encoding="UTF-8", quote = "")
 print("Read - gene file for LFQ")
 clinicaldata_lfq <- read.table(file = "Data_files/LFQ/clinical.txt", header=T, sep="\t", skipNul=T, encoding="UTF-8", quote = "")
+clinicaldata_lfq$Cyto_Risk[clinicaldata_lfq$Cyto_Risk == "Good"] <- "Favorable"
+clinicaldata_lfq$Cyto_Risk[clinicaldata_lfq$Cyto_Risk == "Poor"] <- "Adverse"
 print("Read - clinical data for LFQ")
 # Phospho Files
 genenames_pho = read.table(file = "Data_files/Phospho/genenames.txt", stringsAsFactors=F, header=F, skipNul=T, encoding="UTF-8", quote = "")
 print("Read - gene file for Phospho")
 clinicaldata_pho <- read.table(file = "Data_files/Phospho/clinical.txt", header=T, sep="\t", skipNul=T, encoding="UTF-8", quote = "")
+clinicaldata_pho$Cyto_Risk[clinicaldata_pho$Cyto_Risk == "Good"] <- "Favorable"
+clinicaldata_pho$Cyto_Risk[clinicaldata_pho$Cyto_Risk == "Poor"] <- "Adverse"
 print("Read - clinical data for Phospho")
 # mRNA Files
 genenames_mrna = read.table(file = "Data_files/mRNA/genenames.txt", stringsAsFactors=F, header=F, sep="\t", skipNul=T, encoding="UTF-8", quote = "")
 print("Read - gene file for mRNA")
 clinicaldata_mrna <- read.table(file = "Data_files/mRNA/clinical.txt", header=T, sep = "\t", skipNul=T, encoding="UTF-8", quote = "")
+clinicaldata_mrna$Cyto_Risk[clinicaldata_mrna$Cyto_Risk == "Good"] <- "Favorable"
+clinicaldata_mrna$Cyto_Risk[clinicaldata_mrna$Cyto_Risk == "Poor"] <- "Adverse"
+clinicaldata_mrna$Cyto_Risk[clinicaldata_mrna$Cyto_Risk == "Healthy Donor Mono"] <- "Healthy Donor Monocytes"
+clinicaldata_mrna$Cyto_Risk[clinicaldata_mrna$Cyto_Risk == "Healthy Donor Neu"] <- "Healthy Donor Neutrophils"
+clinicaldata_mrna$Cyto_Risk[clinicaldata_mrna$Cyto_Risk == "Healthy Donor Pro"] <- "Healthy Donor Promylocytes"
+
 print("Read - clinical data for mRNA")
 # correlation files
 genenames_corr = read.table("Data_files/correlation_genes.txt", stringsAsFactors=F, header=F, sep = "\t", skipNul=T, encoding="UTF-8", quote = "")
@@ -43,19 +55,19 @@ print("Read - correlation gene matrix")
 
 # Shinny app stars here
 shinyApp (
-  
+
   # UI part of the app
-  ui <- navbarPage(title = "Proteomic and Phosphoproteomic Landscapes of AML", theme = shinytheme("flatly"), collapsible = TRUE, selected = "Home", 
+  ui <- navbarPage(title = "Proteomic and Phosphoproteomic Landscapes of AML", theme = shinytheme("flatly"), collapsible = TRUE, selected = "Home",
                    tags$head(includeCSS("Data_files/style.css"), tags$style(HTML("a {font-weight: bold;font-size: 15px;}"))),
                    # Home page
-                   tabPanel(title="Home", icon = icon("home"), 
+                   tabPanel(title="Home", icon = icon("home"),
                             tags$div(
                               tags$h4("Introduction"), "These data represent the proteome and phosphoproteome of de novo, Acute Myeloid Leukemia (AML) as well as matching mRNA data from the same patients. Please click the links above to explore these datasets.", tags$br(),tags$br(),
                               tags$h4("Sample information"), "Bone marrow samples were collected at presentation from 44 adult patients with de novo AML. All 44 patients included in this study were also part of the Cancer Genome Atlas (TCGA) LAML study (NEJM 2013, DOI: ",tags$a(href="https://www.nejm.org/doi/full/10.1056/nejmoa1301689",target="_blank", "10.1056/NEJMoa1301689"),"). The 44 patients were selected to represent major cytogenetic and mutational landscapes amongst the 200 TCGA LAML patients with adequate remaining diagnosis cryovials. Cryovials were thawed in the presence of the cell-permeable, irreversible serine protease inhibitor diisopropyl fluorophosphate (DFP) to inactivate neutrophil serine proteases. Healthy control bone marrow samples were lineage-depleted (3 samples) or CD34-selected (3 samples) using autoMACS prior to analysis. Samples were analyzed using tandem-mass-tag (TMT) or label-free-quantification (LFQ) mass spectrometry to obtain protein abundance. A fraction of each sample was IMAC enriched for phosphopeptide analysis also using TMT mass spectrometry. Each of these datasets (TMT, LFQ and phosphopeptides) along with matching RNA-seq from the same patients (previously published by the TCGA LAML study) are made available here for public analysis and download. Paper currently under review; citation and link pending publication.", tags$br(),tags$br(),
                               tags$h4("Data download"), "Data are available freely for download and use. These data represent the proteomic, phosphoproteomic and mRNA measurements from 44 adult patients with de novo Acute Myeloid Leukemia. Each row in the spreadsheet represents one protein, gene, or phosphosite as indicated. Each column represents one sample identified by the UPN (patients) or an appropriate identifier (healthy controls). Please refer to the following paper for further information and please cite this paper for any use of these data: LINK AND CITATION PENDING PUBLICATION.", tags$br(),
                               tags$h5("Datasets included:"),
                               tags$ul(
-                                tags$li("Tandem-mass-tag (TMT) mass spectrometry-based protein abundance measurements from the bone marrow of 44 patients and 3 healthy, lineage-depleted controls. Values are log2 transformed and median centered at 0."), 
+                                tags$li("Tandem-mass-tag (TMT) mass spectrometry-based protein abundance measurements from the bone marrow of 44 patients and 3 healthy, lineage-depleted controls. Values are log2 transformed and median centered at 0."),
                                 tags$li("Label-free quantification (LFQ) mass spectrometry protein abundance measurements from the bone marrow of 44 patients, 3 healthy, lineage-depleted controls and 3 healthy, CD34-selected controls."),
                                 tags$li("Phosphosite abundance measurements after IMAC enrichment and aggregation of phosphopeptide abundances as measured by tandem-mass-tage (TMT) mass spectrometry from the bone marrow of 44 patients and 3 healthy, lineage-depleted controls. Values are log2 transformed and median centered at 0."),
                                 tags$li("mRNA sequencing for the 44 patients included in this study as initially measured by the TCGA LAML study. Also included are data from healthy control marrows which were CD19 selected (B-cells), CD3 selected (T-cells), CD34-selected (enriched for hematopoietic stem and progenitor cells), as well as monocytes, neutrophils and promyelocytes. Values represent TPMs for each gene."),
@@ -63,27 +75,27 @@ shinyApp (
                                 tags$li("Spearman correlation of protein abundance vs. mRNA abundance for 10,125 genes/proteins detected in at least 20% of the 44 AML samples. Protein abundance is measured by tandem-mass-tag (TMT) mass spectrometry and mRNA sequencing is performed on matched cryovials from the same patients.")
                                 ), tags$br(),
                               tags$a(href="https://storage.googleapis.com/tcga_shiny/TCGA_Proteomics_app/Supplemental Table 3.xlsx", "Download the TMT, LFQ, and mRNA abundance data"),tags$br(),
-                              tags$a(href="https://storage.googleapis.com/tcga_shiny/TCGA_Proteomics_app/Supplemental Table 5.xlsx", "Download the phosphosite abundance data"),tags$br(),
+                              tags$a(href="https://storage.googleapis.com/tcga_shiny/TCGA_Proteomics_app/Supplemental Table 7.xlsx", "Download the phosphosite abundance data"),tags$br(),
                               tags$a(href="https://storage.googleapis.com/tcga_shiny/TCGA_Proteomics_app/Supplemental Table 2.xlsx", "Download the clinical patient data"),tags$br(),
                               tags$a(href="https://storage.googleapis.com/tcga_shiny/TCGA_Proteomics_app/Supplemental Table 4.xlsx", "Download protein abundance vs. mRNA abundance correlations"),tags$br(),tags$br(),
                               "See also: ",tags$a(href="https://leylab.shinyapps.io/NPMc_TurboID/", "NPMc Turbo ID dataset", target="_blank")," also from this publication",
                               tags$br(),tags$br()
                               )),
-                   
+
                    # TMT App
                     tabPanel("TMT", tabsetPanel(
                       # MULTIPLOT #
                       tabPanel("Multi protein Plot", fluid = TRUE, sidebarLayout(sidebarPanel(selectizeInput("single_gene_name_1_t", "Multiprotein plot", choices=NULL, multiple = TRUE, selected = NULL), downloadButton("downloadData_t_m", "Download matrix"),width = 4), mainPanel(fluidRow(br(), column(width = 12, plotlyOutput("multigene_plot_tmt",height = "500px")))),position = c("left"),fluid = TRUE)),
-                      # SUBTYPE # 
+                      # SUBTYPE #
                       tabPanel("Single protein by FAB subtype", fluid = TRUE, sidebarLayout(sidebarPanel(selectizeInput("single_gene_name_2_t", "Protein to plot", choices=NULL, multiple = FALSE, selected = NULL), checkboxGroupInput("subtypes_t", label = h5("Subtypes"), choices = list("M0" = "M0", "M1" = "M1", "M2" = "M2","M3" = "M3","M4" = "M4", "M5" = "M5","Healthy Lin-"="Healthy Lin-"), selected = c("M0","M1","M2","M3","M4","M5","Healthy Lin-")), downloadButton("downloadData_t_s", "Download matrix") , width = 4),mainPanel(fluidRow(br(),column(12, plotlyOutput("singlegene_plot_subtype_tmt",height = "500px")))))),
                       # CYTOGENETICS #
-                      tabPanel("Single protein by ELN2017 criteria", fluid = TRUE, sidebarLayout(sidebarPanel(selectizeInput("single_gene_name_3_t", "Protein to plot", choices=NULL, multiple = FALSE, selected = NULL), checkboxGroupInput("cytogenetics_t", label = h5("Criteria"),  choices = list("Favourable" = "Good", "Intermediate" = "Intermediate", "Adverse" = "Poor", "Healthy Lin-" = "Healthy Lin-"),  selected = c("Poor","Good","Intermediate","Healthy Lin-")), downloadButton("downloadData_t_c", "Download matrix") , width = 4),mainPanel(fluidRow(br(),column(12, plotlyOutput("singlegene_plot_cytogenetics_tmt",height = "500px")))))),
+                      tabPanel("Single protein by ELN2017 criteria", fluid = TRUE, sidebarLayout(sidebarPanel(selectizeInput("single_gene_name_3_t", "Protein to plot", choices=NULL, multiple = FALSE, selected = NULL), checkboxGroupInput("cytogenetics_t", label = h5("Criteria"),  choices = list("Favorable" = "Favorable", "Intermediate" = "Intermediate", "Adverse" = "Adverse", "Healthy Lin-" = "Healthy Lin-"),  selected = c("Adverse","Favorable","Intermediate","Healthy Lin-")), downloadButton("downloadData_t_c", "Download matrix") , width = 4),mainPanel(fluidRow(br(),column(12, plotlyOutput("singlegene_plot_cytogenetics_tmt",height = "500px")))))),
                       # FUSIONS #
                       tabPanel("Single protein by Key AML Fusions", fluid = TRUE, sidebarLayout(sidebarPanel(selectizeInput("single_gene_name_4_t", "Protein to plot", choices=NULL, multiple = FALSE, selected = NULL), checkboxGroupInput("fusion_t", label = h5("Key AML Fusions"), choices = list("CBFB-MYH11" = "CBFB","RUNX1-RUNX1T1" = "RUNX1","PML-RARA" = "PML","MLL-X" = "MLL","NUP98-NSD1" = "NSD1","BCR-ABL" = "BCR-ABL1","AML without Fusion" = "Normal","Healthy Donor Lin-" = "Healthy Lin-"), selected = c("CBFB","RUNX1","PML","MLL","NSD1","BCR-ABL1","Normal","Healthy Lin-")), downloadButton("downloadData_t_f", "Download matrix"), width = 4),mainPanel(fluidRow(br(),column(12, plotlyOutput("singlegene_plot_fusion_tmt",height = "550px")))))),
                       # MUTATION #
                       tabPanel("Single protein by Mutations", fluid = TRUE, sidebarLayout(sidebarPanel(selectizeInput("single_gene_name_5_t", "Protein to plot", choices=NULL, multiple = FALSE, selected = NULL), selectInput("single_gene_name_6_t", "Mutation status", choices=dropdowngenes$V1), downloadButton("downloadData_t_w", "Download matrix"), width = 4), mainPanel(fluidRow(br(),column(12, plotlyOutput("singlegene_plot_mutation_tmt",height = "500px"))))))
                       )),
-                   
+
                    # LFQ App
                    tabPanel("LFQ", tabsetPanel(
                      # MULTIPLOT #
@@ -91,13 +103,13 @@ shinyApp (
                      # SUBTYPE #
                      tabPanel("Single protein by FAB subtype", fluid = TRUE, sidebarLayout(sidebarPanel(selectizeInput("single_gene_name_2_l", "Protein to plot", choices=NULL, multiple = FALSE, selected = NULL), checkboxGroupInput("subtypes_l", label = h5("Subtypes"), choices = list("M0" = "M0", "M1" = "M1", "M2" = "M2","M3" = "M3","M4" = "M4", "M5" = "M5","Healthy CD34"="Healthy CD34","Healthy Lin-"="Healthy Lin-"), selected = c("M0","M1","M2","M3","M4","M5","Healthy CD34","Healthy Lin-")), downloadButton("downloadData_l_s", "Download matrix"), width = 4),mainPanel(fluidRow(br(),column(12, plotlyOutput("singlegene_plot_subtype_lfq",height = "500px")))))),
                      # CYTOGENETICS #
-                     tabPanel("Single protein by ELN2017 criteria", fluid = TRUE, sidebarLayout(sidebarPanel(selectizeInput("single_gene_name_3_l", "Protein to plot", choices=NULL, multiple = FALSE, selected = NULL), checkboxGroupInput("cytogenetics_l", label = h5("Cytogenetics"),  choices = list("Favourable" = "Good", "Intermediate" = "Intermediate", "Adverse" = "Poor","Healthy CD34" = "Healthy CD34" ,"Healthy Lin-" = "Healthy Lin-"), selected = c("Poor","Good","Intermediate","Healthy CD34","Healthy Lin-")), downloadButton("downloadData_l_c", "Download matrix"), width = 4),mainPanel(fluidRow(br(),column(12, plotlyOutput("singlegene_plot_cytogenetics_lfq",height = "500px")))))),
+                     tabPanel("Single protein by ELN2017 criteria", fluid = TRUE, sidebarLayout(sidebarPanel(selectizeInput("single_gene_name_3_l", "Protein to plot", choices=NULL, multiple = FALSE, selected = NULL), checkboxGroupInput("cytogenetics_l", label = h5("Cytogenetics"),  choices = list("Favorable" = "Favorable", "Intermediate" = "Intermediate", "Adverse" = "Adverse","Healthy CD34" = "Healthy CD34" ,"Healthy Lin-" = "Healthy Lin-"), selected = c("Adverse","Favorable","Intermediate","Healthy CD34","Healthy Lin-")), downloadButton("downloadData_l_c", "Download matrix"), width = 4),mainPanel(fluidRow(br(),column(12, plotlyOutput("singlegene_plot_cytogenetics_lfq",height = "500px")))))),
                      # FUSIONS #
                      tabPanel("Single protein by Key AML Fusions", fluid = TRUE, sidebarLayout(sidebarPanel(selectizeInput("single_gene_name_4_l", "Protein to plot", choices=NULL, multiple = FALSE, selected = NULL), checkboxGroupInput("fusion_l", label = h5("Key AML Fusions"), choices = list("CBFB-MYH11" = "CBFB","RUNX1-RUNX1T1" = "RUNX1","PML-RARA" = "PML","MLL-X" = "MLL","NUP98-NSD1" = "NSD1","BCR-ABL" = "BCR-ABL1","AML without Fusion" = "Normal","Healthy CD34"="Healthy CD34","Healthy Donor Lin-" = "Healthy Lin-"), selected = c("CBFB","RUNX1","PML","MLL","NSD1","BCR-ABL1","Normal","Healthy CD34","Healthy Lin-")), downloadButton("downloadData_l_f", "Download matrix"), width = 4),mainPanel(fluidRow(br(),column(12, plotlyOutput("singlegene_plot_fusion_lfq",height = "500px")))))),
                      # MUTATION #
                      tabPanel("Single protein by Mutations", fluid = TRUE, sidebarLayout(sidebarPanel(selectizeInput("single_gene_name_5_l", "Protein to plot", choices=NULL, multiple = FALSE, selected = NULL), selectInput("single_gene_name_6_l", "Mutation status", choices=dropdowngenes$V1), downloadButton("downloadData_l_w", "Download matrix"), width = 4),mainPanel(fluidRow(br(),column(12, plotlyOutput("singlegene_plot_mutation_lfq",height = "500px"))))))
                      )),
-                   
+
                    # Phospho App
                    tabPanel("Phosphosite", tabsetPanel(
                      # SUBTYPE #
@@ -109,7 +121,7 @@ shinyApp (
                      # MUTATION #
                      tabPanel("Single protein by Mutations", fluid = TRUE, sidebarLayout(mainPanel(),sidebarPanel(fluidRow(column(6, selectizeInput("single_gene_name_4_p", "Protein to plot", choices=NULL, multiple = FALSE, selected = NULL)), column(6, selectInput("single_gene_name_5_p", "Mutation status", choices=dropdowngenes$V1))), downloadButton("downloadData_p_w", "Download matrix"), width = 12, plotlyOutput("singlegene_plot_mutation_phospho",height = "700px"))))
                      )),
-                   
+
                    # mRNA App
                    tabPanel("mRNA", tabsetPanel(
                      # MULTIPLOT #
@@ -117,21 +129,21 @@ shinyApp (
                      # SUBTYPE #
                      tabPanel("Single gene by FAB subtype", fluid = TRUE, sidebarLayout(sidebarPanel(selectizeInput("single_gene_name_2_m", "Gene to plot", choices=NULL, multiple = FALSE, selected = NULL), checkboxGroupInput("subtypes_m", label = h5("Subtypes"), choices = list("M0" = "M0", "M1" = "M1", "M2" = "M2","M3" = "M3","M4" = "M4", "M5" = "M5","Healthy Donor CD19"="Healthy Donor CD19", "Healthy Donor CD3"="Healthy Donor CD3","Healthy Donor CD34"="Healthy Donor CD34","Healthy Donor Monocytes"="Healthy Donor Mono","Healthy Donor Neutrophils"="Healthy Donor Neu","Healthy Donor Promylocytes"="Healthy Donor Pro"), selected = c("M0","M1","M2","M3","M4","M5","Healthy Donor CD19","Healthy Donor CD3","Healthy Donor CD34","Healthy Donor Mono","Healthy Donor Neu","Healthy Donor Pro")), downloadButton("downloadData_m_s", "Download matrix"), width = 4),mainPanel(fluidRow(br(),column(12, plotlyOutput("singlegene_plot_subtype_mrna",height = "500px")))))),
                      # CYTOGENETICS #
-                     tabPanel("Single gene by ELN2017 criteria", fluid = TRUE, sidebarLayout(sidebarPanel(selectizeInput("single_gene_name_3_m", "Gene to plot", choices=NULL, multiple = FALSE, selected = NULL), checkboxGroupInput("cytogenetics_m", label = h5("Criteria"),  choices = list("Favourable" = "Good", "Intermediate" = "Intermediate", "Adverse" = "Poor", "Healthy Donor CD19"="Healthy Donor CD19", "Healthy Donor CD3"="Healthy Donor CD3","Healthy Donor CD34"="Healthy Donor CD34","Healthy Donor Monocytes"="Healthy Donor Mono","Healthy Donor Neutrophils"="Healthy Donor Neu","Healthy Donor Promylocytes"="Healthy Donor Pro"), selected = c("Poor","Good","Intermediate","Healthy Donor CD19","Healthy Donor CD3","Healthy Donor CD34","Healthy Donor Mono","Healthy Donor Neu","Healthy Donor Pro")), downloadButton("downloadData_m_c", "Download matrix"), width = 4),mainPanel(fluidRow(br(),column(12, plotlyOutput("singlegene_plot_cytogenetics_mrna",height = "500px")))))),
+                     tabPanel("Single gene by ELN2017 criteria", fluid = TRUE, sidebarLayout(sidebarPanel(selectizeInput("single_gene_name_3_m", "Gene to plot", choices=NULL, multiple = FALSE, selected = NULL), checkboxGroupInput("cytogenetics_m", label = h5("Criteria"),  choices = list("Favorable" = "Favorable", "Intermediate" = "Intermediate", "Adverse" = "Adverse", "Healthy Donor CD19"="Healthy Donor CD19", "Healthy Donor CD3"="Healthy Donor CD3","Healthy Donor CD34"="Healthy Donor CD34","Healthy Donor Monocytes"="Healthy Donor Monocytes","Healthy Donor Neutrophils"="Healthy Donor Neutrophils","Healthy Donor Promylocytes"="Healthy Donor Promylocytes"), selected = c("Adverse","Favorable","Intermediate","Healthy Donor CD19","Healthy Donor CD3","Healthy Donor CD34","Healthy Donor Monocytes","Healthy Donor Neutrophils","Healthy Donor Promylocytes")), downloadButton("downloadData_m_c", "Download matrix"), width = 4),mainPanel(fluidRow(br(),column(12, plotlyOutput("singlegene_plot_cytogenetics_mrna",height = "500px")))))),
                      # FUSIONS #
                      tabPanel("Single gene by Key AML Fusions", fluid = TRUE, sidebarLayout(sidebarPanel(selectizeInput("single_gene_name_4_m", "Gene to plot", choices=NULL, multiple = FALSE, selected = NULL), checkboxGroupInput("fusion_m", label = h5("Key AML Fusions"), choices = list("CBFB-MYH11" = "CBFB","RUNX1-RUNX1T1" = "RUNX1","PML-RARA" = "PML","MLL-X" = "MLL","NUP98-NSD1" = "NSD1","BCR-ABL" = "BCR-ABL1","AML without Fusion" = "Normal","Healthy Donor CD19"="Healthy Donor CD19", "Healthy Donor CD3"="Healthy Donor CD3","Healthy Donor CD34"="Healthy Donor CD34","Healthy Donor Monocytes"="Healthy Donor Mono","Healthy Donor Neutrophils"="Healthy Donor Neu","Healthy Donor Promylocytes"="Healthy Donor Pro"), selected = c("CBFB","RUNX1","PML","MLL","NSD1","BCR-ABL1","Normal","Healthy Donor CD19","Healthy Donor CD3","Healthy Donor CD34","Healthy Donor Mono","Healthy Donor Neu","Healthy Donor Pro")), downloadButton("downloadData_m_f", "Download matrix"), width = 4),mainPanel(fluidRow(br(),column(12, plotlyOutput("singlegene_plot_fusion_mrna",height = "550px")))))),
                      # MUTATION #
                      tabPanel("Single gene by Mutations", fluid = TRUE, sidebarLayout(sidebarPanel(selectizeInput("single_gene_name_5_m", "Gene to plot", choices=NULL, multiple = FALSE, selected = NULL), selectInput("single_gene_name_6_m", "Mutation status", choices=dropdowngenes$V1), downloadButton("downloadData_m_w", "Download matrix"), width = 4),mainPanel(fluidRow(br(),column(12, plotlyOutput("singlegene_plot_mutation_mrna",height = "500px"))))))
                      )),
-                   
+
                    # Protein vs. mRNA app
                    tabPanel("Protein vs mRNA", sidebarLayout(sidebarPanel(selectizeInput("single_gene_name_1_pm", "Enter Gene/Protein to plot", choices=NULL, multiple = TRUE, selected = NULL), downloadButton("downloadData_pm_m", "Download Table of Correlations"), plotlyOutput("multigene_plot_protein",height = "500px"), width = 12), mainPanel(), position = c("left"), fluid = TRUE)
                             )
                    ),
-  
-  
+
+
   ## ENTIRE SEVER WORKING GOES HERE
-  server = function(input, output, session) 
+  server = function(input, output, session)
   {
     ###### TMT APP STUFF ######
     # Updating the selectize options
@@ -156,13 +168,13 @@ shinyApp (
         df <- merge(df, clinicaldata_tmt, by="UPN")
         dmtm <<- df
         g <- ggplot(df,aes(fill=Gene, y=Log2.Expression, x=Name, text = paste0("UPN ID: ",UPN,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_bar(position="dodge", stat="identity") + theme_bw() +
-          theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=10, family="avenir", face="bold"), 
+          theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=10, family="avenir", face="bold"),
                 axis.title=element_text(size=12, family="avenir", face="bold"),
                 axis.text.x = element_text(angle = 90, hjust = 1)) +
           ggtitle("Multiple protein view") +
           ylab("Log2 Expression") + xlab("")
         ggplotly(g, tooltip="text")
-        
+
       }
     })
     output$downloadData_t_m <- downloadHandler(
@@ -202,8 +214,8 @@ shinyApp (
             finalmatrix <- finalmatrix[,c(2,3,4,5,1,6)]
             dmts <<- finalmatrix
             g <- ggplot(finalmatrix,aes(FAB, Log2.Expression, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
-              ggtitle(paste0("Log2 Expression for ",genesToPlot)) + 
-              theme(text=element_text(size=12, family="avenir", face="bold"), 
+              ggtitle(paste0("Log2 Expression for ",genesToPlot)) +
+              theme(text=element_text(size=12, family="avenir", face="bold"),
                     axis.text=element_text(size=12, family="avenir", face="bold")) +
               ylab("Log2 Expression") + xlab("")
             ggplotly(g, tooltip="text")
@@ -243,13 +255,13 @@ shinyApp (
             finalmatrix <- merge(plotttinggene, bysubtype, by="UPN")
             finalmatrix <- finalmatrix[,c(2,3,4,5,7)]
             colnames(finalmatrix) <- c("Log2.Expression","Name","TCGA_ID","TCGA_Name","Cyto_risk")
-            levels(finalmatrix$Cyto_risk) <- c("Favourable","Healthy Lin-","Intermediate","Adverse")
-            finalmatrix$Cyto_risk <- factor(finalmatrix$Cyto_risk,levels=c("Favourable","Intermediate","Adverse","Healthy Lin-"))
+            levels(finalmatrix$Cyto_risk) <- c("Favorable","Healthy Lin-","Intermediate","Adverse")
+            finalmatrix$Cyto_risk <- factor(finalmatrix$Cyto_risk,levels=c("Favorable","Intermediate","Adverse","Healthy Lin-"))
             finalmatrix$Gene <- genesToPlot
             finalmatrix <- finalmatrix[,c(2,3,4,5,1,6)]
             dmtc <<- finalmatrix
             g <- ggplot(finalmatrix,aes(Cyto_risk, Log2.Expression, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
-              ggtitle(paste0("Log2 Expression for ",genesToPlot)) + 
+              ggtitle(paste0("Log2 Expression for ",genesToPlot)) +
               theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=12, family="avenir", face="bold")) +
               ylab("Log2 Expression") + xlab("")
             ggplotly(g, tooltip="text")
@@ -295,7 +307,7 @@ shinyApp (
             finalmatrix <- finalmatrix[,c(2,3,4,5,1,6)]
             dmtf <<- finalmatrix
             g <- ggplot(finalmatrix,aes(Fusion, Log2.Expression, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
-              ggtitle(paste0("Log2 Expression for ",genesToPlot)) + 
+              ggtitle(paste0("Log2 Expression for ",genesToPlot)) +
               theme(text=element_text(size=12, family="avenir", face="bold"),axis.text=element_text(size=12, family="avenir", face="bold"), axis.text.x = element_text(angle = 45)) +
               ylab("Log2 Expression") + xlab("")
             ggplotly(g, tooltip="text")
@@ -347,10 +359,10 @@ shinyApp (
           finaldata <- finaldata[,c(1,6,7,4,5,3,2)]
           finaldata$Gene <- normalgenes
           dmtw <<- finaldata
-          g <- ggplot(finaldata,aes(Group, Log2.Expression, text = paste0("UPN ID: ",Name,"<br />Mutation type: ", Mutation,"<br />TCGA Sample ID: ", TCGA))) + 
-            geom_quasirandom(size = 0.8) + 
+          g <- ggplot(finaldata,aes(Group, Log2.Expression, text = paste0("UPN ID: ",Name,"<br />Mutation type: ", Mutation,"<br />TCGA Sample ID: ", TCGA))) +
+            geom_quasirandom(size = 0.8) +
             theme_bw() +
-            ggtitle(paste0("Log2 Expression for ",normalgenes," with ",genesToPlot, ": WT|MT")) + 
+            ggtitle(paste0("Log2 Expression for ",normalgenes," with ",genesToPlot, ": WT|MT")) +
             theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=12, family="avenir", face="bold"),axis.text.x = element_text(angle = 45, hjust = 1)) +
             ylab("Log2 Expression") + xlab("")
           ggplotly(g, tooltip="text")
@@ -361,8 +373,8 @@ shinyApp (
       filename = function() {paste0("Output.csv")},
       content = function(file) {write.csv(dmtw, file, quote = F, row.names = F, sep = "\t")}
     )
-    
-    
+
+
     ###### LFQ APP STUFF ######
     # Updating the selectize options
     updateSelectizeInput(session, 'single_gene_name_1_l', choices = genenames_lfq$V1, server = TRUE)
@@ -428,7 +440,7 @@ shinyApp (
             finalmatrix <- finalmatrix[,c(1,3,4,5,2,6)]
             dmls <<- finalmatrix
             g <- ggplot(finalmatrix,aes(FAB, Expression, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_Name))) + geom_quasirandom(size = 0.8) + theme_bw() +
-              ggtitle(paste0("Expression for ",genesToPlot)) + 
+              ggtitle(paste0("Expression for ",genesToPlot)) +
               theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=12, family="avenir", face="bold"), axis.text.x = element_text(angle = 45)) + ylab("Expression") + xlab("")
             ggplotly(g, tooltip="text")
           }
@@ -467,13 +479,13 @@ shinyApp (
             finalmatrix <- merge(plotttinggene, bysubtype, by="UPN")
             finalmatrix <- finalmatrix[,c(1,2,3,4,7)]
             colnames(finalmatrix) <- c("UPN","Expression","Name","TCGA_Name","Cyto_risk")
-            levels(finalmatrix$Cyto_risk) <- c("Favourable","Healthy CD34","Healthy Lin-","Intermediate","Adverse")
-            finalmatrix$Cyto_risk <- factor(finalmatrix$Cyto_risk,levels=c("Favourable","Intermediate","Adverse","Healthy CD34","Healthy Lin-"))
+            levels(finalmatrix$Cyto_risk) <- c("Favorable","Healthy CD34","Healthy Lin-","Intermediate","Adverse")
+            finalmatrix$Cyto_risk <- factor(finalmatrix$Cyto_risk,levels=c("Favorable","Intermediate","Adverse","Healthy CD34","Healthy Lin-"))
             finalmatrix$Gene <- genesToPlot
             finalmatrix <- finalmatrix[,c(1,3,4,5,2,6)]
             dmlc <<- finalmatrix
             g <- ggplot(finalmatrix,aes(Cyto_risk, Expression, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_Name))) + geom_quasirandom(size = 0.8) + theme_bw() +
-              ggtitle(paste0("Expression for ",genesToPlot)) + 
+              ggtitle(paste0("Expression for ",genesToPlot)) +
               theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=12, family="avenir", face="bold"), axis.text.x = element_text(angle = 45)) + ylab("Expression") + xlab("")
             ggplotly(g, tooltip="text")
           }
@@ -518,7 +530,7 @@ shinyApp (
             finalmatrix <- finalmatrix[,c(1,3,4,5,2,6)]
             dmlf <<- finalmatrix
             g <- ggplot(finalmatrix,aes(Fusion, Expression, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_Name))) + geom_quasirandom(size = 0.8) + theme_bw() +
-              ggtitle(paste0("Expression for ",genesToPlot)) + 
+              ggtitle(paste0("Expression for ",genesToPlot)) +
               theme(text=element_text(size=12, family="avenir", face="bold"),axis.text=element_text(size=12, family="avenir", face="bold"),axis.text.x = element_text(angle = 45)) + ylab("Expression") + xlab("")
             ggplotly(g, tooltip="text")
           }
@@ -569,10 +581,10 @@ shinyApp (
           finaldata <- finaldata[,c(1,6,7,4,5,3,2)]
           finaldata$Gene <- normalgenes
           dmlw <<- finaldata
-          g <- ggplot(finaldata,aes(Group, Expression, text = paste0("UPN ID: ",Name,"<br />Mutation type: ", Mutation,"<br />TCGA Sample ID: ", TCGA))) + 
-            geom_quasirandom(size = 0.8) + 
+          g <- ggplot(finaldata,aes(Group, Expression, text = paste0("UPN ID: ",Name,"<br />Mutation type: ", Mutation,"<br />TCGA Sample ID: ", TCGA))) +
+            geom_quasirandom(size = 0.8) +
             theme_bw() +
-            ggtitle(paste0("Expression for ",normalgenes," with ",genesToPlot, ": WT|MT")) + 
+            ggtitle(paste0("Expression for ",normalgenes," with ",genesToPlot, ": WT|MT")) +
             theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=12, family="avenir", face="bold"),axis.text.x = element_text(angle = 45, hjust = 1)) + ylab("Expression") + xlab("")
           ggplotly(g, tooltip="text")
         }
@@ -582,8 +594,8 @@ shinyApp (
       filename = function() {paste0("Output.csv")},
       content = function(file) {write.csv(dmlw, file, quote = F, row.names = F, sep = "\t")}
     )
-    
-    
+
+
     ###### Phospho APP STUFF ######
     # Updating the selectize options
     updateSelectizeInput(session, 'single_gene_name_1_p', choices = genenames_pho$V1, server = TRUE)
@@ -621,10 +633,10 @@ shinyApp (
             finalmatrix$FAB <- factor(finalmatrix$FAB,levels=c("M0","M1","M2","M3","M4","M5","Healthy Lin-"))
             finalmatrix$Gene <- genesToPlot
             dmps <<- finalmatrix
-            g <- ggplot(finalmatrix,aes(FAB, Expression, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID,"<br />TCGA Sample Name: ", TCGA_Name))) + 
+            g <- ggplot(finalmatrix,aes(FAB, Expression, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID,"<br />TCGA Sample Name: ", TCGA_Name))) +
               geom_quasirandom(size = 0.8) + facet_wrap(~ Phosphite) +
               theme_bw() +
-              ggtitle(paste0("Log2 Expression for the ",genesToPlot," phosphosite sites")) + 
+              ggtitle(paste0("Log2 Expression for the ",genesToPlot," phosphosite sites")) +
               theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=12, family="avenir", face="bold"),axis.text.x = element_text(angle = 45, hjust = 1)) +
               ylab("Log2 Expression") + xlab("")
             ggplotly(g, tooltip="text")
@@ -639,7 +651,7 @@ shinyApp (
     # CYTOGENETICS #
     output$singlegene_plot_cytogenetics_phospho <- renderPlotly({
       genesToPlot <- toupper(input$single_gene_name_2_p)
-      subtypesToPlot <- c("Poor","Good","Intermediate","Healthy Lin-")
+      subtypesToPlot <- c("Adverse","Favorable","Intermediate","Healthy Lin-")
       #genesToPlot <- "DNMT3A"
       #subtypesToPlot <- c("Poor","Good","Intermediate","Healthy Lin-")
       tcga = NULL
@@ -664,14 +676,14 @@ shinyApp (
             plotttinggene <- melt(plotttinggene, id.vars=c("UPN"))
             colnames(plotttinggene) <- c("UPN","Phosphite","Expression")
             finalmatrix <- merge(plotttinggene, bysubtype, by="UPN")
-            levels(finalmatrix$Cyto_Risk) <- c("Favourable","Healthy Lin-","Intermediate","Adverse")
-            finalmatrix$Cyto_Risk <- factor(finalmatrix$Cyto_Risk,levels=c("Favourable","Intermediate","Adverse","Healthy Lin-"))
+            levels(finalmatrix$Cyto_Risk) <- c("Favorable","Healthy Lin-","Intermediate","Adverse")
+            finalmatrix$Cyto_Risk <- factor(finalmatrix$Cyto_Risk,levels=c("Favorable","Intermediate","Adverse","Healthy Lin-"))
             finalmatrix$Gene <- genesToPlot
             dmpc <<- finalmatrix
-            g <- ggplot(finalmatrix,aes(Cyto_Risk, Expression, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID,"<br />TCGA Sample Name: ", TCGA_Name))) + 
-              geom_quasirandom(size = 0.8) + facet_wrap(~ Phosphite) + 
+            g <- ggplot(finalmatrix,aes(Cyto_Risk, Expression, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID,"<br />TCGA Sample Name: ", TCGA_Name))) +
+              geom_quasirandom(size = 0.8) + facet_wrap(~ Phosphite) +
               theme_bw() +
-              ggtitle(paste0("Log2 Expression for the ",genesToPlot," phosphosite sites")) + 
+              ggtitle(paste0("Log2 Expression for the ",genesToPlot," phosphosite sites")) +
               theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=12, family="avenir", face="bold"),axis.text.x = element_text(angle = 45, hjust = 1)) +
               ylab("Log2 Expression") + xlab("")
             ggplotly(g, tooltip="text")
@@ -715,10 +727,10 @@ shinyApp (
             levels(finalmatrix$Fusion) <- c("CBFB-MYH11","RUNX1-RUNX1T1","PML-RARA","MLL-X","NUP98-NSD1","BCR-ABL","AML without Fusion","Healthy Donor Lin-")
             finalmatrix$Gene <- genesToPlot
             dmpf <<- finalmatrix
-            g <- ggplot(finalmatrix,aes(Fusion, Expression, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID,"<br />TCGA Sample Name: ", TCGA_Name))) + 
+            g <- ggplot(finalmatrix,aes(Fusion, Expression, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID,"<br />TCGA Sample Name: ", TCGA_Name))) +
               geom_quasirandom(size = 0.8) + facet_wrap(~ Phosphite) +
               theme_bw() +
-              ggtitle(paste0("Log2 Expression for the ",genesToPlot," phosphosite sites")) + 
+              ggtitle(paste0("Log2 Expression for the ",genesToPlot," phosphosite sites")) +
               theme(text=element_text(size=12, family="avenir", face="bold"),axis.text=element_text(size=12, family="avenir", face="bold"),axis.text.x = element_text(angle = 90, hjust = 1)) +
               ylab("Log2 Expression") + xlab("")
             ggplotly(g, tooltip="text")
@@ -770,10 +782,10 @@ shinyApp (
           finalmatrix <- rbind(finalmatrix,tcga_wt,tcga_he)
           finaldata <- merge(finalmatrix, clinicaldata_pho, by=c("UPN"))
           dmpw <<- finaldata
-          g <- ggplot(finaldata,aes(Group, Expression, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID,"<br />TCGA Sample Name: ", TCGA_Name,"<br />Mutation: ", Mutation))) + 
-            geom_quasirandom(size = 0.8) + facet_wrap(~ Phosphosite) + 
+          g <- ggplot(finaldata,aes(Group, Expression, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID,"<br />TCGA Sample Name: ", TCGA_Name,"<br />Mutation: ", Mutation))) +
+            geom_quasirandom(size = 0.8) + facet_wrap(~ Phosphosite) +
             theme_bw() +
-            ggtitle(paste0("Expression for the ",genesToPlot," WT|MT at ",normalgenes," phosphosite sites")) + 
+            ggtitle(paste0("Expression for the ",genesToPlot," WT|MT at ",normalgenes," phosphosite sites")) +
             theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=12, family="avenir", face="bold"),axis.text.x = element_text(angle = 45, hjust = 1)) +
             ylab("Log2 Expression") + xlab("")
           ggplotly(g, tooltip="text")
@@ -784,7 +796,7 @@ shinyApp (
       filename = function() {paste0("Output.csv")},
       content = function(file) {write.csv(dmpw, file, quote = F, row.names = F, sep = "\t")}
     )
-    
+
     ###### mRNA APP STUFF ######
     # Updating the selectize options
     updateSelectizeInput(session, 'single_gene_name_1_m', choices = genenames_mrna$V1, server = TRUE)
@@ -852,7 +864,7 @@ shinyApp (
             finalmatrix <- finalmatrix[,c(2,3,4,5,1,6)]
             dmms <<- finalmatrix
             g <- ggplot(finalmatrix,aes(FAB, Log2.Expression, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
-              ggtitle(paste0("Expression for ",genesToPlot)) + 
+              ggtitle(paste0("Expression for ",genesToPlot)) +
               theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=12, family="avenir", face="bold"),axis.text.x = element_text(angle = 45, hjust = 1)) +
               ylab("Expression") + xlab("")
             ggplotly(g, tooltip="text")
@@ -892,13 +904,13 @@ shinyApp (
             finalmatrix <- merge(plotttinggene, bysubtype, by="UPN")
             finalmatrix <- finalmatrix[,c(2,3,4,5,7)]
             colnames(finalmatrix) <- c("Log2.Expression","Name","TCGA_ID","TCGA_Name","Cyto_risk")
-            levels(finalmatrix$Cyto_risk) <- c("Favourable","Healthy Donor CD19","Healthy Donor CD3","Healthy Donor CD34","Healthy Donor Monocytes","Healthy Donor Neutrophils","Healthy Donor Promylocytes","Intermediate","Adverse")
-            finalmatrix$Cyto_risk <- factor(finalmatrix$Cyto_risk,levels=c("Favourable","Intermediate","Adverse","Healthy Donor CD19","Healthy Donor CD3","Healthy Donor CD34","Healthy Donor Monocytes","Healthy Donor Neutrophils","Healthy Donor Promylocytes"))
+            levels(finalmatrix$Cyto_risk) <- c("Favorable","Healthy Donor CD19","Healthy Donor CD3","Healthy Donor CD34","Healthy Donor Monocytes","Healthy Donor Neutrophils","Healthy Donor Promylocytes","Intermediate","Adverse")
+            finalmatrix$Cyto_risk <- factor(finalmatrix$Cyto_risk,levels=c("Favorable","Intermediate","Adverse","Healthy Donor CD19","Healthy Donor CD3","Healthy Donor CD34","Healthy Donor Monocytes","Healthy Donor Neutrophils","Healthy Donor Promylocytes"))
             finalmatrix$Gene <- genesToPlot
             finalmatrix <- finalmatrix[,c(2,3,4,5,1,6)]
             dmmc <<- finalmatrix
             g <- ggplot(finalmatrix,aes(Cyto_risk, Log2.Expression, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
-              ggtitle(paste0("Expression for ",genesToPlot)) + 
+              ggtitle(paste0("Expression for ",genesToPlot)) +
               theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=12, family="avenir", face="bold"),axis.text.x = element_text(angle = 45, hjust = 1)) +
               ylab("Expression") + xlab("")
             ggplotly(g, tooltip="text")
@@ -944,7 +956,7 @@ shinyApp (
             finalmatrix <- finalmatrix[,c(2,3,4,5,1,6)]
             dmmf <<- finalmatrix
             g <- ggplot(finalmatrix,aes(Fusion, Log2.Expression, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
-              ggtitle(paste0("Expression for ",genesToPlot)) + 
+              ggtitle(paste0("Expression for ",genesToPlot)) +
               theme(text=element_text(size=12, family="avenir", face="bold"),axis.text=element_text(size=12, family="avenir", face="bold"), axis.text.x = element_text(angle = 45, hjust = 1)) +
               ylab("Expression") + xlab("")
             ggplotly(g, tooltip="text")
@@ -995,10 +1007,10 @@ shinyApp (
           names(finaldata) <- c("UPN","Gene","Log2.Expression","Group","Mutation","Name","TCGA")
           finaldata$Gene <- normalgenes
           dmmw <<- finaldata
-          g <- ggplot(finaldata,aes(Group, Log2.Expression, text = paste0("UPN ID: ",Name,"<br />Mutation type: ", Mutation,"<br />TCGA Sample Name: ", TCGA))) + 
-            geom_quasirandom(size = 0.8) + 
+          g <- ggplot(finaldata,aes(Group, Log2.Expression, text = paste0("UPN ID: ",Name,"<br />Mutation type: ", Mutation,"<br />TCGA Sample Name: ", TCGA))) +
+            geom_quasirandom(size = 0.8) +
             theme_bw() +
-            ggtitle(paste0("Expression for ",normalgenes," with ",genesToPlot, ": WT|MT")) + 
+            ggtitle(paste0("Expression for ",normalgenes," with ",genesToPlot, ": WT|MT")) +
             theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=12, family="avenir", face="bold"),axis.text.x = element_text(angle = 45, hjust = 1)) +
             ylab("Expression") + xlab("")
           ggplotly(g, tooltip="text")
@@ -1009,7 +1021,7 @@ shinyApp (
       filename = function() {paste0("Output.csv")},
       content = function(file) {write.csv(dmmw, file, quote = F, row.names = F, sep = "\t")}
     )
-    
+
     ###### TMT vs mRNA STUFF ######
     # Updating the selectize options
     updateSelectizeInput(session, 'single_gene_name_1_pm', choices = genenames_corr$V1, server = TRUE)
@@ -1061,12 +1073,12 @@ shinyApp (
         names(sp_correlation) <- c("Gene","Correlation")
         rownames(sp_correlation) <- NULL
         dmab <<- sp_correlation
-        g1 <- ggplot(main_df,aes(x=Log2_Expression, y=Abundance)) + geom_point() + 
+        g1 <- ggplot(main_df,aes(x=Log2_Expression, y=Abundance)) + geom_point() +
           theme_bw() + theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=10, family="avenir", face="bold"),  axis.title=element_text(size=12, family="avenir", face="bold"), axis.text.x = element_text(angle = 0, hjust = 1)) +
           ylab("mRNA Abundance") + xlab("Protein Abundance (TMT: log2)") +
           facet_wrap(~ Facet, scales = "free")
         ggplotly(g1, tooltip="text")
-        
+
       }
     })
     output$downloadData_pm_m <- downloadHandler(
