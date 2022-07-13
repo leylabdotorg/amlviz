@@ -89,7 +89,7 @@ shinyApp (
                                 tags$li("Spearman correlation of protein abundance vs. mRNA abundance for 10,125 genes/proteins detected in at least 20% of the 44 AML samples. Protein abundance is measured by tandem-mass-tag (TMT) mass spectrometry and mRNA sequencing is performed on matched cryovials from the same patients.")
                                 ), tags$br(),
                               tags$a(href="https://storage.googleapis.com/tcga_shiny/TCGA_Proteomics_app/Supplemental Table 3.xlsx", "Download the TMT, LFQ, and mRNA abundance data"),tags$br(),
-                              tags$a(href="https://storage.googleapis.com/tcga_shiny/TCGA_Proteomics_app/Supplemental Table 7.xlsx", "Download the phosphosite abundance data"),tags$br(),
+                              tags$a(href="https://storage.googleapis.com/tcga_shiny/TCGA_Proteomics_app/Supplemental_Table_7.xlsx", "Download the phosphosite abundance data"),tags$br(),
                               tags$a(href="https://storage.googleapis.com/tcga_shiny/TCGA_Proteomics_app/Supplemental Table 2.xlsx", "Download the clinical patient data"),tags$br(),
                               tags$a(href="https://storage.googleapis.com/tcga_shiny/TCGA_Proteomics_app/Supplemental Table 4.xlsx", "Download protein abundance vs. mRNA abundance correlations"),tags$br(),tags$br(),
                               "See also: ",tags$a(href="https://leylab.shinyapps.io/NPMc_TurboID/", "NPMc Turbo ID dataset", target="_blank")," also from this publication",
