@@ -19,10 +19,10 @@ print("Connected to database")
 # more effcient this way... choices are only loaded once per server rather than every client 
 tmtChoices <- unique(dbGetQuery(database, "SELECT Gene FROM Genes WHERE Type='TMT';"))
 lfqChoices <- unique(dbGetQuery(database, "SELECT Gene FROM Genes WHERE Type='LFQ';"))
-phosphoChoices <- unique(dbGetQuery(database, "SELECT Gene FROM Genes WHERE Type='Phosphosite';"))
-#phosphoChoices <- lapply(phosphoChoices, function (x) {gsub("_.*$", "", x)})
+phosphoChoices <- dbGetQuery(database, "SELECT Gene FROM Genes WHERE Type='Phosphosite';")
+phosphoChoices <- as.data.frame(lapply(phosphoChoices, function (x) {gsub("_.*$", "", x)}))
+phosphoChoices <- unique(phosphoChoices)
 mrnaChoices <- unique(dbGetQuery(database, "SELECT Gene FROM Genes WHERE Type='mRNA';"))
-# gene correlations file for vs
 
 # local files
 # May remove in favor of database
@@ -115,7 +115,6 @@ server <- function(input, output,session) {
       mutationLevels <<- c("WT","Healthy CD34", "Healthy Lin-")
     }
     else if(input$type == "Phosphosite") {
-      # TODO: Fix when you change the database
       updateSelectizeInput(session, "gene", choices = phosphoChoices$Gene, server = TRUE)
       
       subtype <- c("Subtype", "Cytogenetics", "Fusion", "Mutations")
@@ -135,7 +134,6 @@ server <- function(input, output,session) {
       updateSelectizeInput(session, "genes", choices = mrnaChoices$Gene, server = TRUE)
       updateSelectizeInput(session, "gene", choices = mrnaChoices$Gene, server = TRUE)
       
-      
       itemPlot <<- "Gene"
       subtype <- c("Multiplot","Subtype", "Cytogenetics", "Fusion", "Mutations")
       
@@ -151,9 +149,11 @@ server <- function(input, output,session) {
       mutationLevels <<- c("WT","Healthy Donor CD19", "Healthy Donor CD3","Healthy Donor CD34","Healthy Donor Mono","Healthy Donor Neu","Healthy Donor Pro")
     }
     else if(input$type == "Protein vs mRNAs") {
+      updateSelectizeInput(session, "genes", label = "Enter Gene/Protein to plot", choices = genenames_corr$V1, server = TRUE)
+      shinyjs::show(id = "genes")
+      shinyjs::hide(id = "gene")
       shinyjs::hide(id = "subtype")
       subtype <- NULL
-      updateSelectizeInput(session, "gene", label = "Enter Gene/Protein to plot")
     }
     
     updateSelectizeInput(session, 'subtype', choices = subtype, server = TRUE)
@@ -163,7 +163,7 @@ server <- function(input, output,session) {
   
   # Handle event when user selects subtype
   observeEvent(input$subtype, {
-    # Phosphosite doesn't allow you to toggle clincal options
+    # Phosphosite doesn't allow you to toggle clinical options
     if(input$type == "Phosphosite") {
       shinyjs::hide(id = "subtype_options")
     }
@@ -215,11 +215,7 @@ server <- function(input, output,session) {
       shinyjs::hide(id = "subtype_options")
     }
   })
-  
-  # TODO: Handle changing of datasets when different type is selected (input$type)
-  #updateSelectizeInput(session, "genes", choices = tmtChoices$Gene, server = TRUE)
-  #updateSelectizeInput(session, "gene", choices = tmtChoices$Gene, server = TRUE)
-  
+
   output$plot <- renderPlotly({
     plotReady <- FALSE
     # Multiplot
@@ -259,9 +255,14 @@ server <- function(input, output,session) {
       clinical <- dbGetQuery(database,query)
       
       clinical <- merge(clinical,tcga, by="UPN")
+      facet <- NULL
+      if(input$type == "Phosphosite") {
+        setnames(clinical, "Gene", "Phosphosite")
+        facet <- facet_wrap(~ Phosphosite)
+      }
+      
       clinical$Gene <- input$gene
       clinical$FAB <- factor(clinical$FAB,levels = subtypeSelected)
-      clinical <- subset(clinical, select = -c(UPN) )
       
       # Plot
       g <- ggplot(clinical,aes(FAB, Value, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
@@ -271,6 +272,7 @@ server <- function(input, output,session) {
               axis.text.x = element_text(angle = 45, hjust = 1)) +
         ylab("Log2 Expression") + xlab("") + scale_x_discrete(labels = as.list(invert(hash(subtypeChoices))))
       
+      g <- g + facet
       plotReady <- TRUE
     }
     
@@ -282,7 +284,6 @@ server <- function(input, output,session) {
         query <- geneQuery(genes = input$gene, type = input$type)
       }
       tcga <- dbGetQuery(database,query)
-      
       query <- clinicalQuery(factors=c("UPN","Name","TCGA_ID","TCGA_Name","Cyto_Risk"),
                              table=paste(input$type,"_Clinical",sep=""),
                              subtypes=input$subtype_options,
@@ -290,12 +291,18 @@ server <- function(input, output,session) {
       clinical <- dbGetQuery(database,query)
       
       clinical <- merge(clinical,tcga, by="UPN")
+      
+      facet <- NULL
+      if(input$type == "Phosphosite") {
+        setnames(clinical, "Gene", "Phosphosite")
+        facet <- facet_wrap(~ Phosphosite)
+      }
       clinical$Gene <- input$gene
-      clinical <- subset(clinical, select = -c(UPN) )
       # TODO Change db instead of making this change
       #clinical$Cyto_Risk[clinical$Cyto_Risk == "Good"] <- "Favorable"
       #clinical$Cyto_Risk[clinical$Cyto_Risk == "Poor"] <- "Adverse"
       clinical$Cyto_Risk <- factor(clinical$Cyto_Risk,levels = cytoSelected)
+      print(clinical)
       
       # Plot
       g <- ggplot(clinical,aes(Cyto_Risk, Value, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
@@ -303,6 +310,8 @@ server <- function(input, output,session) {
         theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=12, family="avenir", face="bold"),
               axis.text.x = element_text(angle = 45, hjust = 1)) +
         ylab("Log2 Expression") + xlab("") + scale_x_discrete(labels = as.list(invert(hash(cytoChoices))))
+      
+      g <- g + facet
       plotReady <- TRUE
     }
     
@@ -321,14 +330,22 @@ server <- function(input, output,session) {
       clinical <- dbGetQuery(database,query)
       
       clinical <- merge(clinical,tcga, by="UPN")
+      
+      facet <- NULL
+      if(input$type == "Phosphosite") {
+        setnames(clinical, "Gene", "Phosphosite")
+        facet <- facet_wrap(~ Phosphosite)
+      }
+      
       clinical$Gene <- input$gene
-      clinical <- subset(clinical, select = -c(UPN) )
       clinical$Fusion <- factor(clinical$Fusion,levels = fusionSelected)
       
       g <- ggplot(clinical,aes(Fusion, Value, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
         ggtitle(paste0("Log2 Expression for ",input$gene)) +
         theme(text=element_text(size=12, family="avenir", face="bold"),axis.text=element_text(size=12, family="avenir", face="bold"), axis.text.x = element_text(angle = 45)) +
         ylab("Log2 Expression") + xlab("") + scale_x_discrete(labels = as.list(invert(hash(fusionChoices))))
+      
+      g <- g + facet
       plotReady <- TRUE
     }
     # TODO add length greater than 0 for options
@@ -342,7 +359,6 @@ server <- function(input, output,session) {
       query <- clinicalQuery(factors = "*",
                              table = paste0(input$type,"_Clinical"))
       all_clinical <- dbGetQuery(database,query)
-      print(all_clinical)
       
       upns_with_health <- as.character(all_clinical$UPN[which(all_clinical$TCGA_Name %like% "Healthy")])
       
@@ -356,6 +372,7 @@ server <- function(input, output,session) {
       
       clinical <- merge(tcga,all_clinical[,c("UPN","Name","TCGA_ID")], by = "UPN")
       clinical <- clinical[,c(1,6,7,3,4,2,5)]
+      #TODO ADD Phosphosite
       
       factorLevels <- unique(clinical$Group)
       factorLevels <- factorLevels[! factorLevels %in% mutationLevels]
