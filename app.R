@@ -6,8 +6,7 @@ library(ggplot2)
 library(ggbeeswarm)
 library(DBI)
 library(data.table)
-library(hash)
-
+library(stringr)
 source("functions.R")
 
 
@@ -29,7 +28,6 @@ mrnaChoices <- unique(dbGetQuery(database, "SELECT Gene FROM Genes WHERE Type='m
 dropdowngenes <- read.table(file = "Data_files/mutation_specific_genes.txt", sep="\t", skipNul=T, encoding="UTF-8", quote = "")
 mutation_table <- read.table(file = "Data_files/mutations.txt", header=T, sep="\t", skipNul=T, encoding="UTF-8", quote = "")
 genenames_corr = read.table("Data_files/correlation_genes.txt", stringsAsFactors=F, header=F, sep = "\t", skipNul=T, encoding="UTF-8", quote = "")
-
 
 ui <- fluidPage(
   useShinyjs(),
@@ -84,68 +82,25 @@ server <- function(input, output,session) {
     if(input$type == "TMT") {
       updateSelectizeInput(session, "genes", choices = tmtChoices$Gene, server = TRUE)
       updateSelectizeInput(session, "gene", choices = tmtChoices$Gene, server = TRUE)
-      
       subtype <- c("Multiplot","Subtype", "Cytogenetics", "Fusion", "Mutations")
-      subtypeChoices <<- list("M0" = "M0", "M1" = "M1", "M2" = "M2","M3" = "M3","M4" = "M4", "M5" = "M5","Healthy Lin-"="Healthy Lin-")
-      subtypeSelected <<- c("M0","M1","M2","M3","M4","M5","Healthy Lin-")
-      
-      cytoChoices <<- list("Favorable" = "Good", "Intermediate" = "Intermediate", "Adverse" = "Poor", "Healthy Lin-" = "Healthy Lin-")
-      cytoSelected <<- c("Good","Intermediate","Poor","Healthy Lin-")
-      
-      fusionChoices <<- list("CBFB-MYH11" = "CBFB","RUNX1-RUNX1T1" = "RUNX1","PML-RARA" = "PML","MLL-X" = "MLL","NUP98-NSD1" = "NSD1","BCR-ABL" = "BCR-ABL1","AML without Fusion" = "Normal","Healthy Donor Lin-" = "Healthy Lin-")
-      fusionSelected <<- c("CBFB","RUNX1","PML","MLL","NSD1","BCR-ABL1","Normal","Healthy Lin-")
-      
       mutationLevels <<- c("WT", "Healthy Lin-")
     }
     else if(input$type == "LFQ") {
       updateSelectizeInput(session, "genes", choices = lfqChoices$Gene, server = TRUE)
       updateSelectizeInput(session, "gene", choices = lfqChoices$Gene, server = TRUE)
-      
       subtype <- c("Multiplot","Subtype", "Cytogenetics", "Fusion", "Mutations")
-      
-      subtypeChoices <<- list("M0" = "M0", "M1" = "M1", "M2" = "M2","M3" = "M3","M4" = "M4", "M5" = "M5","Healthy CD34"="Healthy CD34","Healthy Lin-"="Healthy Lin-")
-      subtypeSelected <<- c("M0","M1","M2","M3","M4","M5","Healthy CD34","Healthy Lin-")
-      
-      cytoChoices <<- list("Favourable" = "Good", "Intermediate" = "Intermediate", "Adverse" = "Poor","Healthy CD34" = "Healthy CD34" ,"Healthy Lin-" = "Healthy Lin-")
-      cytoSelected <<- c("Good","Intermediate","Poor","Healthy CD34","Healthy Lin-")
-      
-      fusionChoices <<- list("CBFB-MYH11" = "CBFB","RUNX1-RUNX1T1" = "RUNX1","PML-RARA" = "PML","MLL-X" = "MLL","NUP98-NSD1" = "NSD1","BCR-ABL" = "BCR-ABL1","AML without Fusion" = "Normal","Healthy CD34"="Healthy CD34","Healthy Donor Lin-" = "Healthy Lin-")
-      fusionSelected <<- c("CBFB","RUNX1","PML","MLL","NSD1","BCR-ABL1","Normal","Healthy CD34","Healthy Lin-")
-      
       mutationLevels <<- c("WT","Healthy CD34", "Healthy Lin-")
     }
     else if(input$type == "Phosphosite") {
       updateSelectizeInput(session, "gene", choices = phosphoChoices$Gene, server = TRUE)
-      
       subtype <- c("Subtype", "Cytogenetics", "Fusion", "Mutations")
-      
-      subtypeChoices <<- list("M0" = "M0", "M1" = "M1", "M2" = "M2","M3" = "M3","M4" = "M4", "M5" = "M5","Healthy Lin-"="Healthy Lin-")
-      subtypeSelected <<- c("M0","M1","M2","M3","M4","M5","Healthy Lin-")
-      
-      cytoChoices <<- list("Favorable" = "Good", "Intermediate" = "Intermediate", "Adverse" = "Poor", "Healthy Lin-" = "Healthy Lin-")
-      cytoSelected <<- c("Good","Intermediate","Poor","Healthy Lin-")
-      
-      fusionChoices <<- list("CBFB-MYH11" = "CBFB","RUNX1-RUNX1T1" = "RUNX1","PML-RARA" = "PML","MLL-X" = "MLL","NUP98-NSD1" = "NSD1","BCR-ABL" = "BCR-ABL1","AML without Fusion" = "Normal","Healthy Donor Lin-" = "Healthy Lin-")
-      fusionSelected <<- c("CBFB","RUNX1","PML","MLL","NSD1","BCR-ABL1","Normal","Healthy Lin-")
-      
       mutationLevels <<- c("WT", "Healthy Lin-")
     }
     else if(input$type == "mRNA") {
       updateSelectizeInput(session, "genes", choices = mrnaChoices$Gene, server = TRUE)
       updateSelectizeInput(session, "gene", choices = mrnaChoices$Gene, server = TRUE)
-      
       itemPlot <<- "Gene"
       subtype <- c("Multiplot","Subtype", "Cytogenetics", "Fusion", "Mutations")
-      
-      subtypeChoices <<- list("M0" = "M0", "M1" = "M1", "M2" = "M2","M3" = "M3","M4" = "M4", "M5" = "M5","Healthy Donor CD19"="Healthy Donor CD19", "Healthy Donor CD3"="Healthy Donor CD3","Healthy Donor CD34"="Healthy Donor CD34","Healthy Donor Monocytes"="Healthy Donor Mono","Healthy Donor Neutrophils"="Healthy Donor Neu","Healthy Donor Promylocytes"="Healthy Donor Pro")
-      subtypeSelected <<- c("M0","M1","M2","M3","M4","M5","Healthy Donor CD19","Healthy Donor CD3","Healthy Donor CD34","Healthy Donor Mono","Healthy Donor Neu","Healthy Donor Pro")
-      
-      cytoChoices <<- list("Favourable" = "Good", "Intermediate" = "Intermediate", "Adverse" = "Poor", "Healthy Donor CD19"="Healthy Donor CD19", "Healthy Donor CD3"="Healthy Donor CD3","Healthy Donor CD34"="Healthy Donor CD34","Healthy Donor Monocytes"="Healthy Donor Mono","Healthy Donor Neutrophils"="Healthy Donor Neu","Healthy Donor Promylocytes"="Healthy Donor Pro")
-      cytoSelected <<- c("Good","Intermediate","Poor","Healthy Donor CD19","Healthy Donor CD3","Healthy Donor CD34","Healthy Donor Mono","Healthy Donor Neu","Healthy Donor Pro")
-      
-      fusionChoices <<- list("CBFB-MYH11" = "CBFB","RUNX1-RUNX1T1" = "RUNX1","PML-RARA" = "PML","MLL-X" = "MLL","NUP98-NSD1" = "NSD1","BCR-ABL" = "BCR-ABL1","AML without Fusion" = "Normal","Healthy Donor CD19"="Healthy Donor CD19", "Healthy Donor CD3"="Healthy Donor CD3","Healthy Donor CD34"="Healthy Donor CD34","Healthy Donor Monocytes"="Healthy Donor Mono","Healthy Donor Neutrophils"="Healthy Donor Neu","Healthy Donor Promylocytes"="Healthy Donor Pro")
-      fusionSelected <<- c("CBFB","RUNX1","PML","MLL","NSD1","BCR-ABL1","Normal","Healthy Donor CD19","Healthy Donor CD3","Healthy Donor CD34","Healthy Donor Mono","Healthy Donor Neu","Healthy Donor Pro")
-      
       mutationLevels <<- c("WT","Healthy Donor CD19", "Healthy Donor CD3","Healthy Donor CD34","Healthy Donor Mono","Healthy Donor Neu","Healthy Donor Pro")
     }
     else if(input$type == "Protein vs mRNAs") {
@@ -183,27 +138,36 @@ server <- function(input, output,session) {
     }
     else if(input$subtype == "Subtype") {
       updateSelectizeInput(session, "gene", label = paste(itemPlot,"to plot"))
+      query <- paste0("SELECT DISTINCT FAB FROM ",input$type,"_Clinical;")
+      subtypeChoices <- unlist(dbGetQuery(database,query),use.names = FALSE)
+      subtypeChoices <- str_sort(subtypeChoices)
       updateCheckboxGroupInput(session,
                                "subtype_options",
                                label = "Subtypes",
                                choices = subtypeChoices, 
-                               selected = subtypeSelected)
+                               selected = subtypeChoices)
     }
     else if(input$subtype == "Cytogenetics") {
       updateSelectizeInput(session, "gene", label = paste(itemPlot,"to plot"))
+      query <- paste0("SELECT DISTINCT Cyto_Risk FROM ",input$type,"_Clinical;")
+      cytoChoices <- unlist(dbGetQuery(database,query),use.names = FALSE)
+      cytoChoices <- str_sort(cytoChoices)
       updateCheckboxGroupInput(session,
                                "subtype_options",
                                label = "Criteria",
                                choices = cytoChoices,
-                               selected = cytoSelected)
+                               selected = cytoChoices)
     }
     else if(input$subtype == "Fusion") {
       updateSelectizeInput(session, "gene", label = paste(itemPlot,"to plot"))
+      query <- paste0("SELECT DISTINCT Fusion FROM ",input$type,"_Clinical;")
+      fusionChoices <- unlist(dbGetQuery(database,query),use.names = FALSE)
+      fusionChoices <- str_sort(fusionChoices)
       updateCheckboxGroupInput(session,
                                "subtype_options",
                                label = "Criteria",
                                choices = fusionChoices,
-                               selected = fusionSelected)
+                               selected = fusionChoices)
     }
     else if(input$subtype == "Mutations") {
       shinyjs::hide(id = "subtype_options")
@@ -247,7 +211,6 @@ server <- function(input, output,session) {
         query <- geneQuery(genes = input$gene, type = input$type)
       }
       tcga <- dbGetQuery(database,query)
-      
       query <- clinicalQuery(factors=c("UPN","Name","TCGA_ID","TCGA_Name","FAB"),
                              table=paste(input$type,"_Clinical",sep=""),
                              subtypes=input$subtype_options,
@@ -260,17 +223,15 @@ server <- function(input, output,session) {
         setnames(clinical, "Gene", "Phosphosite")
         facet <- facet_wrap(~ Phosphosite)
       }
-      
       clinical$Gene <- input$gene
-      clinical$FAB <- factor(clinical$FAB,levels = subtypeSelected)
-      
+
       # Plot
       g <- ggplot(clinical,aes(FAB, Value, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
         ggtitle(paste0("Log2 Expression for ",input$gene)) +
         theme(text=element_text(size=12, family="avenir", face="bold"),
               axis.text=element_text(size=12, family="avenir", face="bold"),
               axis.text.x = element_text(angle = 45, hjust = 1)) +
-        ylab("Log2 Expression") + xlab("") + scale_x_discrete(labels = as.list(invert(hash(subtypeChoices))))
+        ylab("Log2 Expression") + xlab("")
       
       g <- g + facet
       plotReady <- TRUE
@@ -298,18 +259,13 @@ server <- function(input, output,session) {
         facet <- facet_wrap(~ Phosphosite)
       }
       clinical$Gene <- input$gene
-      # TODO Change db instead of making this change
-      #clinical$Cyto_Risk[clinical$Cyto_Risk == "Good"] <- "Favorable"
-      #clinical$Cyto_Risk[clinical$Cyto_Risk == "Poor"] <- "Adverse"
-      clinical$Cyto_Risk <- factor(clinical$Cyto_Risk,levels = cytoSelected)
-      print(clinical)
       
       # Plot
       g <- ggplot(clinical,aes(Cyto_Risk, Value, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
         ggtitle(paste0("Log2 Expression for ",input$gene)) +
         theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=12, family="avenir", face="bold"),
               axis.text.x = element_text(angle = 45, hjust = 1)) +
-        ylab("Log2 Expression") + xlab("") + scale_x_discrete(labels = as.list(invert(hash(cytoChoices))))
+        ylab("Log2 Expression") + xlab("")
       
       g <- g + facet
       plotReady <- TRUE
@@ -338,12 +294,11 @@ server <- function(input, output,session) {
       }
       
       clinical$Gene <- input$gene
-      clinical$Fusion <- factor(clinical$Fusion,levels = fusionSelected)
       
       g <- ggplot(clinical,aes(Fusion, Value, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
         ggtitle(paste0("Log2 Expression for ",input$gene)) +
         theme(text=element_text(size=12, family="avenir", face="bold"),axis.text=element_text(size=12, family="avenir", face="bold"), axis.text.x = element_text(angle = 45)) +
-        ylab("Log2 Expression") + xlab("") + scale_x_discrete(labels = as.list(invert(hash(fusionChoices))))
+        ylab("Log2 Expression") + xlab("")
       
       g <- g + facet
       plotReady <- TRUE
@@ -397,9 +352,7 @@ server <- function(input, output,session) {
       ggplotly(g, tooltip="text")
     }
     
-  })
-  
-  
+  }) 
 }
 
 shinyApp(ui = ui, server = server)
