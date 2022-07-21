@@ -110,10 +110,8 @@ server <- function(input, output,session) {
       shinyjs::hide(id = "subtype")
       subtype <- NULL
     }
-    
     updateSelectizeInput(session, 'subtype', choices = subtype, server = TRUE)
     if(input$type != "Protein vs mRNAs") {shinyjs::show(id = "subtype")}
-    
   })
   
   # Handle event when user selects subtype
@@ -128,7 +126,6 @@ server <- function(input, output,session) {
     shinyjs::show(id = "gene")
     shinyjs::hide(id = "genes")
     shinyjs::hide(id = "mutation_status")
-    
     
     if(input$subtype == "Multiplot") {
       shinyjs::show(id = "genes")
@@ -174,9 +171,10 @@ server <- function(input, output,session) {
       updateSelectizeInput(session, "gene", label = paste(itemPlot,"to plot"))
       shinyjs::show(id = "mutation_status")
     }
-    
     else {
       shinyjs::hide(id = "subtype_options")
+      shinyjs::hide(id = "gene")
+      shinyjs::show(id = "genes")
     }
   })
 
@@ -192,7 +190,6 @@ server <- function(input, output,session) {
       
       clinical <- merge(tcga, clinical, by="UPN")
       
-      # Plot
       g <- ggplot(clinical,aes(fill=Gene, y=Value, x=Name, text = paste0("UPN ID: ",UPN,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_bar(position="dodge", stat="identity") + theme_bw() +
         theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=10, family="avenir", face="bold"),
               axis.title=element_text(size=12, family="avenir", face="bold"),
@@ -225,7 +222,6 @@ server <- function(input, output,session) {
       }
       clinical$Gene <- input$gene
 
-      # Plot
       g <- ggplot(clinical,aes(FAB, Value, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
         ggtitle(paste0("Log2 Expression for ",input$gene)) +
         theme(text=element_text(size=12, family="avenir", face="bold"),
@@ -260,7 +256,6 @@ server <- function(input, output,session) {
       }
       clinical$Gene <- input$gene
       
-      # Plot
       g <- ggplot(clinical,aes(Cyto_Risk, Value, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
         ggtitle(paste0("Log2 Expression for ",input$gene)) +
         theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=12, family="avenir", face="bold"),
@@ -303,7 +298,6 @@ server <- function(input, output,session) {
       g <- g + facet
       plotReady <- TRUE
     }
-    # TODO add length greater than 0 for options
     else if(input$subtype == "Mutations") {
       query <- geneQuery(factors = c("UPN","Value"),genes = input$gene, type = input$type)
       tcga <- dbGetQuery(database,query)
@@ -342,8 +336,10 @@ server <- function(input, output,session) {
         ylab("Log2 Expression") + xlab("")
       plotReady <- TRUE
     }
-    
     else if(input$type == "Protein vs mRNAs") {
+      query <- geneQuery(genes = input$genes,type = input$type)
+      tcga <- dbGetQuery(database,query)
+      print(input$genes)
       
     }
     
