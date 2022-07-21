@@ -15,17 +15,16 @@ database <- dbConnect(RSQLite::SQLite(), "Proteomics.db")
 print("Connected to database")
 
 # database vars
-# more effcient this way... choices are only loaded once per server rather than every client 
-tmtChoices <- unique(dbGetQuery(database, "SELECT Gene FROM Genes WHERE Type='TMT';"))
-lfqChoices <- unique(dbGetQuery(database, "SELECT Gene FROM Genes WHERE Type='LFQ';"))
-phosphoChoices <- dbGetQuery(database, "SELECT Gene FROM Genes WHERE Type='Phosphosite';")
-phosphoChoices <- as.data.frame(lapply(phosphoChoices, function (x) {gsub("_.*$", "", x)}))
-phosphoChoices <- unique(phosphoChoices)
-mrnaChoices <- unique(dbGetQuery(database, "SELECT Gene FROM Genes WHERE Type='mRNA';"))
+# choices are only loaded once per server rather than every client
+TMT_choices <- unique(dbGetQuery(database, "SELECT Gene FROM Genes WHERE Type='TMT';"))
+LFQ_choices <- unique(dbGetQuery(database, "SELECT Gene FROM Genes WHERE Type='LFQ';"))
+phosphosite_choices <- dbGetQuery(database, "SELECT Gene FROM Genes WHERE Type='Phosphosite';")
+phosphosite_choices <- as.data.frame(lapply(phosphosite_choices, function (x) {gsub("_.*$", "", x)}))
+phosphosite_choices <- unique(phosphosite_choices)
+mRNA_choices <- unique(dbGetQuery(database, "SELECT Gene FROM Genes WHERE Type='mRNA';"))
 
 # local files
-# May remove in favor of database
-dropdowngenes <- read.table(file = "Data_files/mutation_specific_genes.txt", sep="\t", skipNul=T, encoding="UTF-8", quote = "")
+mutation_specific_genes <- read.table(file = "Data_files/mutation_specific_genes.txt", sep="\t", skipNul=T, encoding="UTF-8", quote = "")
 mutation_table <- read.table(file = "Data_files/mutations.txt", header=T, sep="\t", skipNul=T, encoding="UTF-8", quote = "")
 genenames_corr = read.table("Data_files/correlation_genes.txt", stringsAsFactors=F, header=F, sep = "\t", skipNul=T, encoding="UTF-8", quote = "")
 
@@ -37,37 +36,31 @@ ui <- fluidPage(
       selectInput(inputId = "type",
                   label = "Select a dataset",
                   choices = c("TMT","LFQ","Phosphosite","mRNA","Protein vs mRNAs")),
-      
       # Dropdown to select which plot you want based on dataset
       selectizeInput(inputId = "subtype",
                      label = "Select an option",
                      choices = NULL,
                      multiple = FALSE),
-      
       # Dropdown to select genes
       selectizeInput(inputId = "genes",
                      label = NULL,
                      choices = NULL,
                      multiple = TRUE,
                      selected = NULL),
-      
       # Dropdown to select gene
       selectizeInput(inputId = "gene",
                      label = NULL,
                      choices = NULL,
                      multiple = FALSE,
                      selected = NULL),
-      
       # Checkbox to select subtype options
       checkboxGroupInput(inputId = "subtype_options",
                          label = NULL,
                          choices = NULL),
-      
       # Dropdown specifically for mutations 
       selectInput(inputId = "mutation_status",
                   label = "Mutation Status",
-                  choices = dropdowngenes$V1)
-      
+                  choices = mutation_specific_genes$V1)
     ),
     mainPanel(
       plotlyOutput("plot",height = "500px")
@@ -80,25 +73,25 @@ server <- function(input, output,session) {
   observeEvent(input$type, {
     itemPlot <<- "Protein"
     if(input$type == "TMT") {
-      updateSelectizeInput(session, "genes", choices = tmtChoices$Gene, server = TRUE)
-      updateSelectizeInput(session, "gene", choices = tmtChoices$Gene, server = TRUE)
+      updateSelectizeInput(session, "genes", choices = TMT_choices$Gene, server = TRUE)
+      updateSelectizeInput(session, "gene", choices = TMT_choices$Gene, server = TRUE)
       subtype <- c("Multiplot","Subtype", "Cytogenetics", "Fusion", "Mutations")
       mutationLevels <<- c("WT", "Healthy Lin-")
     }
     else if(input$type == "LFQ") {
-      updateSelectizeInput(session, "genes", choices = lfqChoices$Gene, server = TRUE)
-      updateSelectizeInput(session, "gene", choices = lfqChoices$Gene, server = TRUE)
+      updateSelectizeInput(session, "genes", choices = LFQ_choices$Gene, server = TRUE)
+      updateSelectizeInput(session, "gene", choices = LFQ_choices$Gene, server = TRUE)
       subtype <- c("Multiplot","Subtype", "Cytogenetics", "Fusion", "Mutations")
       mutationLevels <<- c("WT","Healthy CD34", "Healthy Lin-")
     }
     else if(input$type == "Phosphosite") {
-      updateSelectizeInput(session, "gene", choices = phosphoChoices$Gene, server = TRUE)
+      updateSelectizeInput(session, "gene", choices = phosphosite_choices$Gene, server = TRUE)
       subtype <- c("Subtype", "Cytogenetics", "Fusion", "Mutations")
       mutationLevels <<- c("WT", "Healthy Lin-")
     }
     else if(input$type == "mRNA") {
-      updateSelectizeInput(session, "genes", choices = mrnaChoices$Gene, server = TRUE)
-      updateSelectizeInput(session, "gene", choices = mrnaChoices$Gene, server = TRUE)
+      updateSelectizeInput(session, "genes", choices = mRNA_choices$Gene, server = TRUE)
+      updateSelectizeInput(session, "gene", choices = mRNA_choices$Gene, server = TRUE)
       itemPlot <<- "Gene"
       subtype <- c("Multiplot","Subtype", "Cytogenetics", "Fusion", "Mutations")
       mutationLevels <<- c("WT","Healthy Donor CD19", "Healthy Donor CD3","Healthy Donor CD34","Healthy Donor Mono","Healthy Donor Neu","Healthy Donor Pro")
@@ -136,35 +129,35 @@ server <- function(input, output,session) {
     else if(input$subtype == "Subtype") {
       updateSelectizeInput(session, "gene", label = paste(itemPlot,"to plot"))
       query <- paste0("SELECT DISTINCT FAB FROM ",input$type,"_Clinical;")
-      subtypeChoices <- unlist(dbGetQuery(database,query),use.names = FALSE)
-      subtypeChoices <- str_sort(subtypeChoices)
+      subtype_choices <- unlist(dbGetQuery(database,query),use.names = FALSE)
+      subtype_choices <- str_sort(subtype_choices)
       updateCheckboxGroupInput(session,
                                "subtype_options",
                                label = "Subtypes",
-                               choices = subtypeChoices, 
-                               selected = subtypeChoices)
+                               choices = subtype_choices,
+                               selected = subtype_choices)
     }
     else if(input$subtype == "Cytogenetics") {
       updateSelectizeInput(session, "gene", label = paste(itemPlot,"to plot"))
       query <- paste0("SELECT DISTINCT Cyto_Risk FROM ",input$type,"_Clinical;")
-      cytoChoices <- unlist(dbGetQuery(database,query),use.names = FALSE)
-      cytoChoices <- str_sort(cytoChoices)
+      cyto_choices <- unlist(dbGetQuery(database,query),use.names = FALSE)
+      cyto_choices <- str_sort(cyto_choices)
       updateCheckboxGroupInput(session,
                                "subtype_options",
                                label = "Criteria",
-                               choices = cytoChoices,
-                               selected = cytoChoices)
+                               choices = cyto_choices,
+                               selected = cyto_choices)
     }
     else if(input$subtype == "Fusion") {
       updateSelectizeInput(session, "gene", label = paste(itemPlot,"to plot"))
       query <- paste0("SELECT DISTINCT Fusion FROM ",input$type,"_Clinical;")
-      fusionChoices <- unlist(dbGetQuery(database,query),use.names = FALSE)
-      fusionChoices <- str_sort(fusionChoices)
+      fusion_choices <- unlist(dbGetQuery(database,query),use.names = FALSE)
+      fusion_choices <- str_sort(fusion_choices)
       updateCheckboxGroupInput(session,
                                "subtype_options",
                                label = "Criteria",
-                               choices = fusionChoices,
-                               selected = fusionChoices)
+                               choices = fusion_choices,
+                               selected = fusion_choices)
     }
     else if(input$subtype == "Mutations") {
       shinyjs::hide(id = "subtype_options")
@@ -200,6 +193,7 @@ server <- function(input, output,session) {
       
       plotReady <- TRUE
     }
+    # Subtype
     else if(input$subtype == "Subtype" && length(input$subtype_options) > 0) {
       if(input$type == "Phosphosite") {
         query <- paste("SELECT UPN,Gene,Value FROM Genes WHERE Gene GLOB '",input$gene,"*' AND Type='Phosphosite';",sep="")
@@ -232,7 +226,7 @@ server <- function(input, output,session) {
       g <- g + facet
       plotReady <- TRUE
     }
-    
+    # Cytogenetics
     else if(input$subtype == "Cytogenetics" && length(input$subtype_options) > 0) {
       if(input$type == "Phosphosite") {
         query <- paste("SELECT UPN,Gene,Value FROM Genes WHERE Gene GLOB '",input$gene,"*' AND Type='Phosphosite';",sep="")
@@ -246,7 +240,6 @@ server <- function(input, output,session) {
                              subtypes=input$subtype_options,
                              type="Cyto_Risk")
       clinical <- dbGetQuery(database,query)
-      
       clinical <- merge(clinical,tcga, by="UPN")
       
       facet <- NULL
@@ -265,7 +258,7 @@ server <- function(input, output,session) {
       g <- g + facet
       plotReady <- TRUE
     }
-    
+    # Fusion
     else if(input$subtype == "Fusion" && length(input$subtype_options) > 0) {
       if(input$type == "Phosphosite") {
         query <- paste("SELECT UPN,Gene,Value FROM Genes WHERE Gene GLOB '",input$gene,"*' AND Type='Phosphosite';",sep="")
@@ -279,7 +272,6 @@ server <- function(input, output,session) {
                              subtypes=input$subtype_options,
                              type="Fusion")
       clinical <- dbGetQuery(database,query)
-      
       clinical <- merge(clinical,tcga, by="UPN")
       
       facet <- NULL
@@ -298,6 +290,7 @@ server <- function(input, output,session) {
       g <- g + facet
       plotReady <- TRUE
     }
+    # Mutations
     else if(input$subtype == "Mutations") {
       query <- geneQuery(factors = c("UPN","Value"),genes = input$gene, type = input$type)
       tcga <- dbGetQuery(database,query)
@@ -336,6 +329,7 @@ server <- function(input, output,session) {
         ylab("Log2 Expression") + xlab("")
       plotReady <- TRUE
     }
+    # Protein vs mRNAS
     else if(input$type == "Protein vs mRNAs") {
       query <- geneQuery(genes = input$genes,type = input$type)
       tcga <- dbGetQuery(database,query)
