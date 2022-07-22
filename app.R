@@ -24,9 +24,9 @@ phosphosite_choices <- unique(phosphosite_choices)
 mRNA_choices <- unique(dbGetQuery(database, "SELECT Gene FROM Genes WHERE Type='mRNA';"))
 
 # local files
-mutation_specific_genes <- read.table(file = "Data_files/mutation_specific_genes.txt", sep="\t", skipNul=T, encoding="UTF-8", quote = "")
-mutation_table <- read.table(file = "Data_files/mutations.txt", header=T, sep="\t", skipNul=T, encoding="UTF-8", quote = "")
-genenames_corr = read.table("Data_files/correlation_genes.txt", stringsAsFactors=F, header=F, sep = "\t", skipNul=T, encoding="UTF-8", quote = "")
+mutation_specific_genes <- read.table(file = "data/mutation_specific_genes.txt", sep="\t", skipNul=T, encoding="UTF-8", quote = "")
+mutation_table <- read.table(file = "data/mutations.txt", header=T, sep="\t", skipNul=T, encoding="UTF-8", quote = "")
+genenames_corr = read.table("data/correlation_genes.txt", stringsAsFactors=F, header=F, sep = "\t", skipNul=T, encoding="UTF-8", quote = "")
 
 ui <- fluidPage(
   useShinyjs(),
