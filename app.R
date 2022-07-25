@@ -1,5 +1,4 @@
 library(shiny)
-library(shinyjs)
 library(shinythemes)
 library(plotly)
 library(ggplot2)
@@ -29,39 +28,43 @@ mutation_table <- read.table(file = "data/mutations.txt", header=T, sep="\t", sk
 genenames_corr = read.table("data/correlation_genes.txt", stringsAsFactors=F, header=F, sep = "\t", skipNul=T, encoding="UTF-8", quote = "")
 
 ui <- fluidPage(
-  useShinyjs(),
   sidebarLayout(
     sidebarPanel(
       # Dropdown to select dataset
       selectInput(inputId = "type",
                   label = "Select a dataset",
                   choices = c("TMT","LFQ","Phosphosite","mRNA","Protein vs mRNAs")),
-      # Dropdown to select which plot you want based on dataset
-      selectizeInput(inputId = "subtype",
-                     label = "Select an option",
-                     choices = NULL,
-                     multiple = FALSE),
-      # Dropdown to select genes
-      selectizeInput(inputId = "genes",
-                     label = NULL,
-                     choices = NULL,
-                     multiple = TRUE,
-                     selected = NULL),
-      # Dropdown to select gene
-      selectizeInput(inputId = "gene",
-                     label = NULL,
-                     choices = NULL,
-                     multiple = FALSE,
-                     selected = NULL),
-      # Checkbox to select subtype options
-      checkboxGroupInput(inputId = "subtype_options",
-                         label = NULL,
-                         choices = NULL),
-      # Dropdown specifically for mutations
-      selectInput(inputId = "mutation_status",
-                  label = "Mutation Status",
-                  choices = mutation_specific_genes$V1)
-    ),
+      conditionalPanel(condition = "!(input.type == 'Protein vs mRNAs')",
+                       # Dropdown to select which plot you want based on dataset
+                       selectizeInput(inputId = "subtype",
+                                      label = "Select an option",
+                                      choices = NULL,
+                                      multiple = FALSE)),
+      conditionalPanel(condition = "input.subtype == 'Multiplot' || input.type == 'Protein vs mRNAs'",
+                       # Dropdown to select genes
+                       selectizeInput(inputId = "genes",
+                                      label = NULL,
+                                      choices = NULL,
+                                      multiple = TRUE,
+                                      selected = NULL)),
+      conditionalPanel(condition = "!(input.subtype == 'Multiplot' || input.type == 'Protein vs mRNAs')",
+                       # Dropdown to select gene
+                       selectizeInput(inputId = "gene",
+                                      label = NULL,
+                                      choices = NULL,
+                                      multiple = FALSE,
+                                      selected = NULL)),
+      conditionalPanel(condition = "!(input.subtype == 'Multiplot' || input.subtype == 'Mutations' || input.type == 'Phosphosite' ||input.type == 'Protein vs mRNAs')",
+                       # Checkbox to select subtype options
+                       checkboxGroupInput(inputId = "subtype_options",
+                                          label = NULL,
+                                          choices = NULL)),
+      conditionalPanel(condition = "input.subtype == 'Mutations'",
+                       # Dropdown specifically for mutations
+                       selectInput(inputId = "mutation_status",
+                                   label = "Mutation Status",
+                                   choices = mutation_specific_genes$V1))
+      ),
     mainPanel(
       plotlyOutput("plot",height = "500px")
     )
@@ -99,33 +102,15 @@ server <- function(input, output,session) {
     }
     else if(input$type == "Protein vs mRNAs") {
       updateSelectizeInput(session, "genes", label = "Enter Gene/Protein to plot", choices = genenames_corr$V1, server = TRUE)
-      shinyjs::show(id = "genes")
-      shinyjs::hide(id = "gene")
-      shinyjs::hide(id = "subtype")
       subtype <- NULL
     }
     updateSelectizeInput(session, 'subtype', choices = subtype, server = TRUE)
-    if(input$type != "Protein vs mRNAs") {shinyjs::show(id = "subtype")}
   })
 
   # Handle event when user selects subtype
   # Toggles several ui elements based on the dataset and subtype
   observeEvent(input$subtype, {
-    # Phosphosite doesn't allow you to toggle clinical options
-    if(input$type == "Phosphosite") {
-      shinyjs::hide(id = "subtype_options")
-    }
-    else {
-      shinyjs::show(id = "subtype_options")
-    }
-    shinyjs::show(id = "gene")
-    shinyjs::hide(id = "genes")
-    shinyjs::hide(id = "mutation_status")
-
     if(input$subtype == "Multiplot") {
-      shinyjs::show(id = "genes")
-      shinyjs::hide(id = "subtype_options")
-      shinyjs::hide(id = "gene")
       updateSelectizeInput(session, "genes", label = paste("Multi",tolower(itemPlot)," plot",sep=""))
     }
     else if(input$subtype == "Subtype") {
@@ -162,14 +147,7 @@ server <- function(input, output,session) {
                                selected = fusion_choices)
     }
     else if(input$subtype == "Mutations") {
-      shinyjs::hide(id = "subtype_options")
       updateSelectizeInput(session, "gene", label = paste(itemPlot,"to plot"))
-      shinyjs::show(id = "mutation_status")
-    }
-    else {
-      shinyjs::hide(id = "subtype_options")
-      shinyjs::hide(id = "gene")
-      shinyjs::show(id = "genes")
     }
   })
 
