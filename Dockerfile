@@ -25,15 +25,6 @@ RUN R -e "install.packages('shinycssloaders', repos='http://cran.rstudio.com/')"
 RUN R -e "install.packages('beeswarm', repos='http://cran.rstudio.com/')"
 RUN R -e "install.packages('RCurl', repos='http://cran.rstudio.com/')"
 RUN R -e "install.packages('data.table', repos='http://cran.rstudio.com/')"
-RUN R -e "install.packages('RMariaDB', repos='http://cran.rstudio.com/')"
-
-## Install packages from CRAN
-RUN install2.r --error \
-    -r 'http://cran.rstudio.com' \
-    googleAuthR \
-    ## install Github packages
-    ## clean up
-    && rm -rf /tmp/downloaded_packages/ /tmp/*.rds## assume shiny app is in build folder /shinyCOPY ./Shiny/ /srv/shiny-server/shiny/# select portEXPOSE 3838
 
 COPY . /srv/shiny-server/shiny/
 
