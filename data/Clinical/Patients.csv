@@ -1,0 +1,45 @@
+UPN,Sex,Race,FAB,Gene_Fusions,Cytogenetic_Classification,Risk
+100232,M,Caucasian,M2,,Complex,Adverse
+103342,F,Caucasian,M2,MLL-X,Normal Karyotype,Adverse
+113971,F,Caucasian,M2, ,Normal Karyotype,Intermediate
+123804,F,Caucasian,M5,,Complex,Adverse
+146218,M,Caucasian,M1,CBFB-MYH11,CBFB-MYH11,Favorable
+179016,M,Black or African-American,M3,PML-RARA,PML-RARA,Favorable
+186481,F,Caucasian,M4, ,Normal Karyotype,Favorable
+224143,F,Caucasian,M1, ,Normal Karyotype,Intermediate
+237983,M,Caucasian,M2, ,Adverse Abnormality,Adverse
+258135,F,Caucasian,M2,CBFB-MYH11,CBFB-MYH11,Favorable
+263578,F,Caucasian,M2,RUNX1-RUNX1T1,RUNX1-RUNX1T1,Favorable
+273919,M,Caucasian,M2, ,Normal Karyotype,Intermediate
+303642,F,Caucasian,M1, ,Normal Karyotype,Favorable
+326772,F,Caucasian,M2, ,Complex,Adverse
+332131,M,Caucasian,M1, ,Normal Karyotype,Intermediate
+348685,F,Caucasian,M4, ,Normal Karyotype,Intermediate
+400220,F,Caucasian,M4,MLL-X,Normal Karyotype,Adverse
+407992,M,Caucasian,M4,MLL-X,MLL translocation,Adverse
+410324,M,Caucasian,M5,MLL-X,MLL translocation,Adverse
+434640,M,Caucasian,M0,,Complex,Adverse
+478908,M,Caucasian,M3,PML-RARA,PML-RARA,Favorable
+498463,F,Caucasian,M1, ,Adverse Abnormality,Adverse
+507202,M,Caucasian,M4, ,Normal Karyotype,Favorable
+507696,M,Caucasian,M4,CBFB-MYH11,CBFB-MYH11,Favorable
+570755,M,Caucasian,M2,MLL-X,MLL translocation,Adverse
+594368,M,Black or African-American,M1, ,Complex,Adverse
+595704,F,Caucasian,M4,CBFB-MYH11,CBFB-MYH11,Favorable
+605322,F,Black or African-American,M1, ,Adverse Abnormality,Adverse
+617776,F,Caucasian,M2,NUP98-NSD1,NUP98 Translocation,Adverse
+700717,M,Caucasian,M0,MLL-X,Normal Karyotype,Adverse
+730817,F,Caucasian,M5, ,Normal Karyotype,Intermediate
+740266,M,Caucasian/Native American,M0, ,Complex,Adverse
+750152,F,Caucasian/Native American,M2,RUNX1-RUNX1T1,RUNX1-RUNX1T1,Favorable
+757199,F,Caucasian/Native American,M3,PML-RARA,PML-RARA,Favorable
+809653,F,Caucasian/Native American,M1,,Complex,Adverse
+816067,F,Caucasian/Native American,M5, ,Normal Karyotype,Intermediate
+849660,M,Caucasian/Native American,M1, ,Normal Karyotype,Intermediate
+868231,M,Caucasian/Native American,M4,NUP98-NSD1,NUP98 Translocation,Adverse
+907786,F,Caucasian/Native American,M5,MLL-X,MLL translocation,Adverse
+914247,M,Caucasian/Native American,M4,MLL-X,Normal Karyotype,Intermediate
+933124,F,Caucasian/Native American,M1, ,Normal Karyotype,Intermediate
+982009,M,Black or African-American,M1, ,Normal Karyotype,Favorable
+987523,M,Black or African-American,M1,BCR-ABL1,BCR-ABL1,Adverse
+989176,F,Caucasian/Native American,M1, ,Normal Karyotype,Favorable
