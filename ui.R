@@ -1,14 +1,23 @@
 ui <- fluidPage(
   sidebarLayout(
     sidebarPanel(
-      # Dropdown to select dataset
       selectInput(
-        inputId = "type",
+        inputId = "dataset",
         label = "Select a dataset",
-        choices = c("TMT", "LFQ", "Phosphosite", "mRNA", "Protein vs mRNAs")
+        choices = c("beat_aml", "tcga_aml", "Proteomics") # TODO: Make dynamic based on db structure
       ),
       conditionalPanel(
-        condition = "!(input.type == 'Protein vs mRNAs')",
+        condition = "input.dataset == 'Proteomics'",
+        # Dropdown to select subset
+        selectInput(
+          inputId = "subset",
+          label = "Select a subset",
+          choices = c("TMT", "LFQ", "Phosphosite", "mRNA", "Protein vs mRNAs") # TODO: Make dynamic based on db structure
+        )
+      ),
+      conditionalPanel(
+        #condition = "!(input.subset == 'Protein vs mRNAs')",
+        condition = "(input.subset != 'Protein vs mRNAs') || (input.dataset != 'Proteomics')",
         # Dropdown to select which plot you want based on dataset
         selectizeInput(
           inputId = "subtype",
@@ -18,7 +27,7 @@ ui <- fluidPage(
         )
       ),
       conditionalPanel(
-        condition = "input.subtype == 'Multiplot' || input.type == 'Protein vs mRNAs'",
+        condition = "input.subtype == 'Multiplot' || input.subset == 'Protein vs mRNAs'",
         # Dropdown to select genes
         selectizeInput(
           inputId = "genes",
@@ -29,7 +38,7 @@ ui <- fluidPage(
         )
       ),
       conditionalPanel(
-        condition = "!(input.subtype == 'Multiplot' || input.type == 'Protein vs mRNAs')",
+        condition = "!(input.subtype == 'Multiplot' || input.subset == 'Protein vs mRNAs')",
         # Dropdown to select gene
         selectizeInput(
           inputId = "gene",
@@ -40,7 +49,7 @@ ui <- fluidPage(
         )
       ),
       conditionalPanel(
-        condition = "!(input.subtype == 'Multiplot' || input.subtype == 'Mutations' || input.type == 'Phosphosite' ||input.type == 'Protein vs mRNAs')",
+        condition = "!(input.subtype == 'Multiplot' || input.subtype == 'Mutations' || input.subset == 'Phosphosite' ||input.subset == 'Protein vs mRNAs')",
         # Checkbox to select subtype options
         checkboxGroupInput(
           inputId = "subtype_options",
