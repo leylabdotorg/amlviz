@@ -11,6 +11,7 @@ source("functions.R")
 
 # database
 database <- dbConnect(RSQLite::SQLite(), "Proteomics.db")
+master <- dbConnect(RSQLite::SQLite(), "master_shiny_app.db")
 print("Connected to database")
 
 # database vars
