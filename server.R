@@ -122,12 +122,8 @@ server <- function(input, output,session) {
 
     # Subtype
     else if(input$subtype == "Subtype" && length(input$subtype_options) > 0) {
-      if(input$subset == "Phosphosite") {
-        query <- paste("SELECT UPN,Gene,Value FROM Genes WHERE Gene GLOB '",input$gene,"*' AND Type='Phosphosite';",sep="")
-      }
-      else {
-        query <- geneQuery(genes = input$gene, subset = input$subset)
-      }
+      query <- geneQuery(genes = input$gene, subset = input$subset)
+
       tcga <- dbGetQuery(database,query)
       query <- clinicalQuery(factors=c("UPN","Name","TCGA_ID","TCGA_Name","FAB"),
                              table=paste(input$subset,"_Clinical",sep=""),
@@ -136,11 +132,6 @@ server <- function(input, output,session) {
       clinical <- dbGetQuery(database,query)
 
       clinical <- merge(clinical,tcga, by="UPN")
-      facet <- NULL
-      if(input$subset == "Phosphosite") {
-        setnames(clinical, "Gene", "Phosphosite")
-        facet <- facet_wrap(~ Phosphosite)
-      }
       clinical$Gene <- input$gene
 
       g <- ggplot(clinical,aes(FAB, Value, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
@@ -149,19 +140,13 @@ server <- function(input, output,session) {
               axis.text=element_text(size=12, family="avenir", face="bold"),
               axis.text.x = element_text(angle = 45, hjust = 1)) +
         ylab("Log2 Expression") + xlab("")
-
-      g <- g + facet
       plotReady <- TRUE
     }
 
     # Cytogenetics
     else if(input$subtype == "Cytogenetics" && length(input$subtype_options) > 0) {
-      if(input$subset == "Phosphosite") {
-        query <- paste("SELECT UPN,Gene,Value FROM Genes WHERE Gene GLOB '",input$gene,"*' AND Type='Phosphosite';",sep="")
-      }
-      else {
-        query <- geneQuery(genes = input$gene, subset = input$subset)
-      }
+      query <- geneQuery(genes = input$gene, subset = input$subset)
+
       tcga <- dbGetQuery(database,query)
       query <- clinicalQuery(factors=c("UPN","Name","TCGA_ID","TCGA_Name","Cyto_Risk"),
                              table=paste(input$subset,"_Clinical",sep=""),
@@ -170,11 +155,6 @@ server <- function(input, output,session) {
       clinical <- dbGetQuery(database,query)
       clinical <- merge(clinical,tcga, by="UPN")
 
-      facet <- NULL
-      if(input$subset == "Phosphosite") {
-        setnames(clinical, "Gene", "Phosphosite")
-        facet <- facet_wrap(~ Phosphosite)
-      }
       clinical$Gene <- input$gene
 
       g <- ggplot(clinical,aes(Cyto_Risk, Value, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
@@ -182,19 +162,13 @@ server <- function(input, output,session) {
         theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=12, family="avenir", face="bold"),
               axis.text.x = element_text(angle = 45, hjust = 1)) +
         ylab("Log2 Expression") + xlab("")
-
-      g <- g + facet
       plotReady <- TRUE
     }
 
     # Fusion
     else if(input$subtype == "Fusion" && length(input$subtype_options) > 0) {
-      if(input$subset == "Phosphosite") {
-        query <- paste("SELECT UPN,Gene,Value FROM Genes WHERE Gene GLOB '",input$gene,"*' AND Type='Phosphosite';",sep="")
-      }
-      else {
-        query <- geneQuery(genes = input$gene, subset = input$subset)
-      }
+      query <- geneQuery(genes = input$gene, subset = input$subset)
+
       tcga <- dbGetQuery(database,query)
       query <- clinicalQuery(factors=c("UPN","Name","TCGA_ID","TCGA_Name","Fusion"),
                              table=paste(input$subset,"_Clinical",sep=""),
@@ -202,21 +176,12 @@ server <- function(input, output,session) {
                              type="Fusion")
       clinical <- dbGetQuery(database,query)
       clinical <- merge(clinical,tcga, by="UPN")
-
-      facet <- NULL
-      if(input$subset == "Phosphosite") {
-        setnames(clinical, "Gene", "Phosphosite")
-        facet <- facet_wrap(~ Phosphosite)
-      }
-
       clinical$Gene <- input$gene
 
       g <- ggplot(clinical,aes(Fusion, Value, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
         ggtitle(paste0("Log2 Expression for ",input$gene)) +
         theme(text=element_text(size=12, family="avenir", face="bold"),axis.text=element_text(size=12, family="avenir", face="bold"), axis.text.x = element_text(angle = 45)) +
         ylab("Log2 Expression") + xlab("")
-
-      g <- g + facet
       plotReady <- TRUE
     }
 
