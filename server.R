@@ -100,24 +100,26 @@ server <- function(input, output,session) {
     plotReady <- FALSE
     # Multiplot
     if(input$subtype == "Multiplot" && length(input$genes) > 0) {
-      query <- geneQuery(genes = input$genes,subset = input$subset)
+      #query <- geneQuery(genes = input$genes,subset = input$subset)
+      query <- geneQuery(genes = input$genes, table = input$dataset)
+      print(query)
       tcga <- dbGetQuery(database,query)
 
-      query <- clinicalQuery(factors="*", table=paste(input$subset,"_Clinical",sep=""))
+      query <- clinicalQuery(factors = "*")
+      print(query)
       clinical <- dbGetQuery(database,query)
-
       clinical <- merge(tcga, clinical, by="UPN")
 
-      g <- ggplot(clinical,aes(fill=Gene, y=Value, x=Name, text = paste0("UPN ID: ",UPN,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_bar(position="dodge", stat="identity") + theme_bw() +
+      g <- ggplot(clinical,aes(fill=Gene, y=Expression, x=UPN, text = paste0("UPN ID: ",UPN,"<br />TCGA Sample ID: ", Short_hand_code))) + geom_bar(position="dodge", stat="identity") + theme_bw() +
         theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=10, family="avenir", face="bold"),
               axis.title=element_text(size=12, family="avenir", face="bold"),
               axis.text.x = element_text(angle = 90, hjust = 1)) +
         ggtitle("Multiple protein view") +
         ylab("Log2 Expression") + xlab("")
 
-
       plotReady <- TRUE
     }
+
     # Subtype
     else if(input$subtype == "Subtype" && length(input$subtype_options) > 0) {
       if(input$subset == "Phosphosite") {
@@ -151,6 +153,7 @@ server <- function(input, output,session) {
       g <- g + facet
       plotReady <- TRUE
     }
+
     # Cytogenetics
     else if(input$subtype == "Cytogenetics" && length(input$subtype_options) > 0) {
       if(input$subset == "Phosphosite") {
@@ -183,6 +186,7 @@ server <- function(input, output,session) {
       g <- g + facet
       plotReady <- TRUE
     }
+
     # Fusion
     else if(input$subtype == "Fusion" && length(input$subtype_options) > 0) {
       if(input$subset == "Phosphosite") {
@@ -215,6 +219,7 @@ server <- function(input, output,session) {
       g <- g + facet
       plotReady <- TRUE
     }
+
     # Mutations
     else if(input$subtype == "Mutations") {
       query <- geneQuery(factors = c("UPN","Value"),genes = input$gene, subset = input$subset)
@@ -254,6 +259,7 @@ server <- function(input, output,session) {
         ylab("Log2 Expression") + xlab("")
       plotReady <- TRUE
     }
+
     # Protein vs mRNAS
     else if(input$subset == "Protein vs mRNAs") {
       query <- geneQuery(genes = input$genes, subset = input$subset)
