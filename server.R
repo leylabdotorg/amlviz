@@ -7,7 +7,7 @@ server <- function(input, output,session) {
       print(input$dataset)
       subtype2 <- c("Multiplot","Subtype", "Cytogenetics", "Fusion", "Mutations")
       updateSelectizeInput(session, 'subtype', choices = subtype2, server = TRUE)
-      geneChoices <- unique(dbGetQuery(master, paste("SELECT Gene FROM", input$dataset,";"))) # TODO: Sort this
+      geneChoices <- unique(dbGetQuery(database, paste("SELECT Gene FROM", input$dataset,";"))) # TODO: Sort this
       updateSelectizeInput(session, "genes", choices = geneChoices$Gene, server = TRUE)
       updateSelectizeInput(session, "gene", choices = geneChoices$Gene, server = TRUE)
       itemPlot <<- "Gene"
@@ -59,7 +59,7 @@ server <- function(input, output,session) {
     }
     else if(input$subtype == "Subtype") {
       updateSelectizeInput(session, "gene", label = paste(itemPlot,"to plot"))
-      query <- paste0("SELECT DISTINCT FAB FROM ",input$subset,"_Clinical;")
+      query <- paste0("SELECT DISTINCT FAB FROM master_clinical;")
       subtype_choices <- unlist(dbGetQuery(database,query),use.names = FALSE)
       subtype_choices <- str_sort(subtype_choices)
       updateCheckboxGroupInput(session,
@@ -70,7 +70,7 @@ server <- function(input, output,session) {
     }
     else if(input$subtype == "Cytogenetics") {
       updateSelectizeInput(session, "gene", label = paste(itemPlot,"to plot"))
-      query <- paste0("SELECT DISTINCT Cyto_Risk FROM ",input$subset,"_Clinical;")
+      query <- paste0("SELECT DISTINCT Cyto_Risk FROM master_clinical;")
       cyto_choices <- unlist(dbGetQuery(database,query),use.names = FALSE)
       cyto_choices <- str_sort(cyto_choices)
       updateCheckboxGroupInput(session,
@@ -81,7 +81,7 @@ server <- function(input, output,session) {
     }
     else if(input$subtype == "Fusion") {
       updateSelectizeInput(session, "gene", label = paste(itemPlot,"to plot"))
-      query <- paste0("SELECT DISTINCT Fusion FROM ",input$subset,"_Clinical;")
+      query <- paste0("SELECT DISTINCT Fusion FROM master_clinical;")
       fusion_choices <- unlist(dbGetQuery(database,query),use.names = FALSE)
       fusion_choices <- str_sort(fusion_choices)
       updateCheckboxGroupInput(session,
@@ -100,7 +100,7 @@ server <- function(input, output,session) {
     plotReady <- FALSE
     # Multiplot
     if(input$subtype == "Multiplot" && length(input$genes) > 0) {
-      query <- geneQuery(genes = input$genes,type = input$subset)
+      query <- geneQuery(genes = input$genes,subset = input$subset)
       tcga <- dbGetQuery(database,query)
 
       query <- clinicalQuery(factors="*", table=paste(input$subset,"_Clinical",sep=""))
@@ -124,7 +124,7 @@ server <- function(input, output,session) {
         query <- paste("SELECT UPN,Gene,Value FROM Genes WHERE Gene GLOB '",input$gene,"*' AND Type='Phosphosite';",sep="")
       }
       else {
-        query <- geneQuery(genes = input$gene, type = input$subset)
+        query <- geneQuery(genes = input$gene, subset = input$subset)
       }
       tcga <- dbGetQuery(database,query)
       query <- clinicalQuery(factors=c("UPN","Name","TCGA_ID","TCGA_Name","FAB"),
@@ -157,7 +157,7 @@ server <- function(input, output,session) {
         query <- paste("SELECT UPN,Gene,Value FROM Genes WHERE Gene GLOB '",input$gene,"*' AND Type='Phosphosite';",sep="")
       }
       else {
-        query <- geneQuery(genes = input$gene, type = input$subset)
+        query <- geneQuery(genes = input$gene, subset = input$subset)
       }
       tcga <- dbGetQuery(database,query)
       query <- clinicalQuery(factors=c("UPN","Name","TCGA_ID","TCGA_Name","Cyto_Risk"),
@@ -189,7 +189,7 @@ server <- function(input, output,session) {
         query <- paste("SELECT UPN,Gene,Value FROM Genes WHERE Gene GLOB '",input$gene,"*' AND Type='Phosphosite';",sep="")
       }
       else {
-        query <- geneQuery(genes = input$gene, type = input$subset)
+        query <- geneQuery(genes = input$gene, subset = input$subset)
       }
       tcga <- dbGetQuery(database,query)
       query <- clinicalQuery(factors=c("UPN","Name","TCGA_ID","TCGA_Name","Fusion"),
@@ -217,7 +217,7 @@ server <- function(input, output,session) {
     }
     # Mutations
     else if(input$subtype == "Mutations") {
-      query <- geneQuery(factors = c("UPN","Value"),genes = input$gene, type = input$subset)
+      query <- geneQuery(factors = c("UPN","Value"),genes = input$gene, subset = input$subset)
       tcga <- dbGetQuery(database,query)
       tcga$Group <- "WT"
 
@@ -256,7 +256,7 @@ server <- function(input, output,session) {
     }
     # Protein vs mRNAS
     else if(input$subset == "Protein vs mRNAs") {
-      query <- geneQuery(genes = input$genes,type = input$subset)
+      query <- geneQuery(genes = input$genes, subset = input$subset)
       tcga <- dbGetQuery(database,query)
       print(input$genes)
 
