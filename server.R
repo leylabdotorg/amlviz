@@ -62,6 +62,7 @@ server <- function(input, output,session) {
       query <- paste0("SELECT DISTINCT FAB FROM master_clinical;")
       subtype_choices <- unlist(dbGetQuery(database,query),use.names = FALSE)
       subtype_choices <- str_sort(subtype_choices)
+      # TODO: Remove empty option
       updateCheckboxGroupInput(session,
                                "subtype_options",
                                label = "Subtypes",
@@ -110,23 +111,21 @@ server <- function(input, output,session) {
       clinical <- dbGetQuery(database,query)
       clinical <- merge(tcga, clinical, by="UPN")
 
-      g <- ggplot(clinical,aes(fill=Gene, y=Expression, x=UPN, text = paste0("UPN ID: ",UPN,"<br />TCGA Sample ID: ", Short_hand_code))) + geom_bar(position="dodge", stat="identity") + theme_bw() +
+      g <- ggplot(clinical,aes(fill=Gene, y=Expression, x=UPN, text = paste0("UPN ID: ",UPN,"<br />Dataset: ", Short_hand_code))) + geom_bar(position="dodge", stat="identity") + theme_bw() +
         theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=10, family="avenir", face="bold"),
               axis.title=element_text(size=12, family="avenir", face="bold"),
               axis.text.x = element_text(angle = 90, hjust = 1)) +
         ggtitle("Multiple protein view") +
         ylab("Log2 Expression") + xlab("")
-
       plotReady <- TRUE
     }
 
     # Subtype
     else if(input$subtype == "Subtype" && length(input$subtype_options) > 0) {
-      query <- geneQuery(genes = input$gene, subset = input$subset)
+      query <- geneQuery(genes = input$gene, table = input$dataset)
 
       tcga <- dbGetQuery(database,query)
-      query <- clinicalQuery(factors=c("UPN","Name","TCGA_ID","TCGA_Name","FAB"),
-                             table=paste(input$subset,"_Clinical",sep=""),
+      query <- clinicalQuery(factors="*",
                              subtypes=input$subtype_options,
                              type="FAB")
       clinical <- dbGetQuery(database,query)
@@ -134,7 +133,7 @@ server <- function(input, output,session) {
       clinical <- merge(clinical,tcga, by="UPN")
       clinical$Gene <- input$gene
 
-      g <- ggplot(clinical,aes(FAB, Value, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
+      g <- ggplot(clinical,aes(FAB, Expression, text = paste0("UPN ID: ",UPN,"<br />Dataset: ", Short_hand_code))) + geom_quasirandom(size = 0.8) + theme_bw() +
         ggtitle(paste0("Log2 Expression for ",input$gene)) +
         theme(text=element_text(size=12, family="avenir", face="bold"),
               axis.text=element_text(size=12, family="avenir", face="bold"),
@@ -145,21 +144,21 @@ server <- function(input, output,session) {
 
     # Cytogenetics
     else if(input$subtype == "Cytogenetics" && length(input$subtype_options) > 0) {
-      query <- geneQuery(genes = input$gene, subset = input$subset)
+      query <- geneQuery(genes = input$gene, table = input$dataset)
 
       tcga <- dbGetQuery(database,query)
-      query <- clinicalQuery(factors=c("UPN","Name","TCGA_ID","TCGA_Name","Cyto_Risk"),
-                             table=paste(input$subset,"_Clinical",sep=""),
+      query <- clinicalQuery(factors="*",
                              subtypes=input$subtype_options,
-                             type="Cyto_Risk")
+                             type="Cyto_risk")
       clinical <- dbGetQuery(database,query)
       clinical <- merge(clinical,tcga, by="UPN")
 
       clinical$Gene <- input$gene
 
-      g <- ggplot(clinical,aes(Cyto_Risk, Value, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
+      g <- ggplot(clinical,aes(Cyto_risk, Expression, text = paste0("UPN ID: ",UPN,"<br />Dataset: ", Short_hand_code))) + geom_quasirandom(size = 0.8) + theme_bw() +
         ggtitle(paste0("Log2 Expression for ",input$gene)) +
-        theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=12, family="avenir", face="bold"),
+        theme(text=element_text(size=12, family="avenir", face="bold"),
+              axis.text=element_text(size=12, family="avenir", face="bold"),
               axis.text.x = element_text(angle = 45, hjust = 1)) +
         ylab("Log2 Expression") + xlab("")
       plotReady <- TRUE
@@ -167,20 +166,21 @@ server <- function(input, output,session) {
 
     # Fusion
     else if(input$subtype == "Fusion" && length(input$subtype_options) > 0) {
-      query <- geneQuery(genes = input$gene, subset = input$subset)
+      query <- geneQuery(genes = input$gene, table = input$dataset)
 
       tcga <- dbGetQuery(database,query)
-      query <- clinicalQuery(factors=c("UPN","Name","TCGA_ID","TCGA_Name","Fusion"),
-                             table=paste(input$subset,"_Clinical",sep=""),
+      query <- clinicalQuery(factors="*",
                              subtypes=input$subtype_options,
                              type="Fusion")
       clinical <- dbGetQuery(database,query)
       clinical <- merge(clinical,tcga, by="UPN")
       clinical$Gene <- input$gene
 
-      g <- ggplot(clinical,aes(Fusion, Value, text = paste0("UPN ID: ",Name,"<br />TCGA Sample ID: ", TCGA_ID))) + geom_quasirandom(size = 0.8) + theme_bw() +
+      g <- ggplot(clinical,aes(Fusion, Expression, text = paste0("UPN ID: ",UPN,"<br />Dataset: ", Short_hand_code))) + geom_quasirandom(size = 0.8) + theme_bw() +
         ggtitle(paste0("Log2 Expression for ",input$gene)) +
-        theme(text=element_text(size=12, family="avenir", face="bold"),axis.text=element_text(size=12, family="avenir", face="bold"), axis.text.x = element_text(angle = 45)) +
+        theme(text=element_text(size=12, family="avenir", face="bold"),
+              axis.text=element_text(size=12, family="avenir", face="bold"),
+              axis.text.x = element_text(angle = 45, hjust = 1)) +
         ylab("Log2 Expression") + xlab("")
       plotReady <- TRUE
     }
