@@ -27,3 +27,7 @@ mRNA_choices <- unique(dbGetQuery(proteomics, "SELECT Gene FROM Genes WHERE Type
 mutation_specific_genes <- read.table(file = "data/mutation_specific_genes.txt", sep="\t", skipNul=T, encoding="UTF-8", quote = "")
 mutation_table <- read.table(file = "data/mutations.txt", header=T, sep="\t", skipNul=T, encoding="UTF-8", quote = "")
 genenames_corr <- read.table("data/correlation_genes.txt", stringsAsFactors=F, header=F, sep = "\t", skipNul=T, encoding="UTF-8", quote = "")
+
+
+query <- paste0("SELECT * FROM master_database;")
+dataset <- dbGetQuery(database,query)
