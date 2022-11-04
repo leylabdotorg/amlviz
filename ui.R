@@ -7,15 +7,6 @@ ui <- fluidPage(
         choices = c("beat_aml", "tcga_aml", "Proteomics") # TODO: Make dynamic based on db structure
       ),
       conditionalPanel(
-        condition = "input.dataset == 'Proteomics'",
-        # Dropdown to select subset
-        selectInput(
-          inputId = "subset",
-          label = "Select a subset",
-          choices = c("TMT", "LFQ", "Phosphosite", "mRNA", "Protein vs mRNAs") # TODO: Make dynamic based on db structure
-        )
-      ),
-      conditionalPanel(
         #condition = "!(input.subset == 'Protein vs mRNAs')",
         condition = "(input.subset != 'Protein vs mRNAs') || (input.dataset != 'Proteomics')",
         # Dropdown to select which plot you want based on dataset

@@ -1,54 +1,18 @@
 server <- function(input, output,session) {
-  observeEvent(input$dataset, {
-    # Handle event when user selects dataset
-    # Changes gene list and available types of plots based on the dataset
+  updateSelectInput(session, "dataset", choices = dataset$Short_hand_code,
+                    selected = NULL)
 
-    if(input$dataset != "Proteomics") {
-      print(input$dataset)
-      subtype2 <- c("Multiplot","Subtype", "Cytogenetics", "Fusion", "Mutations")
-      updateSelectizeInput(session, 'subtype', choices = subtype2, server = TRUE)
-      geneChoices <- unique(dbGetQuery(database, paste("SELECT Gene FROM", input$dataset,";"))) # TODO: Sort this
-      updateSelectizeInput(session, "genes", choices = geneChoices$Gene, server = TRUE)
-      updateSelectizeInput(session, "gene", choices = geneChoices$Gene, server = TRUE)
-      itemPlot <<- "Gene"
-    }
-  })
-
-
-  # Handle event when user selects subset
+  # Handle event when user selects dataset
   # Changes gene list and available types of plots based on the dataset
-  observeEvent(input$subset, {
-    itemPlot <<- "Protein"
-    if(input$subset == "TMT") {
-      updateSelectizeInput(session, "genes", choices = TMT_choices$Gene, server = TRUE)
-      updateSelectizeInput(session, "gene", choices = TMT_choices$Gene, server = TRUE)
-      subtype <- c("Multiplot","Subtype", "Cytogenetics", "Fusion", "Mutations")
-      mutationLevels <<- c("WT", "Healthy Lin-")
-    }
-    else if(input$subset == "LFQ") {
-      updateSelectizeInput(session, "genes", choices = LFQ_choices$Gene, server = TRUE)
-      updateSelectizeInput(session, "gene", choices = LFQ_choices$Gene, server = TRUE)
-      subtype <- c("Multiplot","Subtype", "Cytogenetics", "Fusion", "Mutations")
-      mutationLevels <<- c("WT","Healthy CD34", "Healthy Lin-")
-    }
-    else if(input$subset == "Phosphosite") {
-      updateSelectizeInput(session, "gene", choices = phosphosite_choices$Gene, server = TRUE)
-      subtype <- c("Subtype", "Cytogenetics", "Fusion", "Mutations")
-      mutationLevels <<- c("WT", "Healthy Lin-")
-    }
-    else if(input$subset == "mRNA") {
-      updateSelectizeInput(session, "genes", choices = mRNA_choices$Gene, server = TRUE)
-      updateSelectizeInput(session, "gene", choices = mRNA_choices$Gene, server = TRUE)
-      itemPlot <<- "Gene"
-      subtype <- c("Multiplot","Subtype", "Cytogenetics", "Fusion", "Mutations")
-      mutationLevels <<- c("WT","Healthy Donor CD19", "Healthy Donor CD3","Healthy Donor CD34","Healthy Donor Mono","Healthy Donor Neu","Healthy Donor Pro")
-    }
-    else if(input$subset == "Protein vs mRNAs") {
-      updateSelectizeInput(session, "genes", label = "Enter Gene/Protein to plot", choices = genenames_corr$V1, server = TRUE)
-      subtype <- NULL
-    }
-
-    updateSelectizeInput(session, 'subtype', choices = subtype, server = TRUE)
+  # TODO: Change db to have list of available plots
+  observeEvent(input$dataset, {
+    print(input$dataset)
+    subtype2 <- c("Multiplot","FAB", "Cytogenetics", "Fusion", "Mutations")
+    updateSelectizeInput(session, 'subtype', choices = subtype2, server = TRUE)
+    geneChoices <- unique(dbGetQuery(database, paste("SELECT Gene FROM", input$dataset,";"))) # TODO: Sort this
+    updateSelectizeInput(session, "genes", choices = geneChoices$Gene, server = TRUE)
+    updateSelectizeInput(session, "gene", choices = geneChoices$Gene, server = TRUE)
+    itemPlot <<- "Gene"
   })
 
   # Handle event when user selects subtype
@@ -57,7 +21,7 @@ server <- function(input, output,session) {
     if(input$subtype == "Multiplot") {
       updateSelectizeInput(session, "genes", label = paste("Multi",tolower(itemPlot)," plot",sep=""))
     }
-    else if(input$subtype == "Subtype") {
+    else if(input$subtype == "FAB") {
       updateSelectizeInput(session, "gene", label = paste(itemPlot,"to plot"))
       query <- paste0("SELECT DISTINCT FAB FROM master_clinical;")
       subtype_choices <- unlist(dbGetQuery(database,query),use.names = FALSE)
@@ -99,6 +63,8 @@ server <- function(input, output,session) {
   # Handles output for plot
   output$plot <- renderPlotly({
     plotReady <- FALSE
+
+
     # Multiplot
     if(input$subtype == "Multiplot" && length(input$genes) > 0) {
       #query <- geneQuery(genes = input$genes,subset = input$subset)
@@ -143,95 +109,12 @@ server <- function(input, output,session) {
     }
 
     # Cytogenetics
-    else if(input$subtype == "Cytogenetics" && length(input$subtype_options) > 0) {
-      query <- geneQuery(genes = input$gene, table = input$dataset)
-
-      tcga <- dbGetQuery(database,query)
-      query <- clinicalQuery(factors="*",
-                             subtypes=input$subtype_options,
-                             type="Cyto_risk")
-      clinical <- dbGetQuery(database,query)
-      clinical <- merge(clinical,tcga, by="UPN")
-
-      clinical$Gene <- input$gene
-
-      g <- ggplot(clinical,aes(Cyto_risk, Expression, text = paste0("UPN ID: ",UPN,"<br />Dataset: ", Short_hand_code))) + geom_quasirandom(size = 0.8) + theme_bw() +
-        ggtitle(paste0("Log2 Expression for ",input$gene)) +
-        theme(text=element_text(size=12, family="avenir", face="bold"),
-              axis.text=element_text(size=12, family="avenir", face="bold"),
-              axis.text.x = element_text(angle = 45, hjust = 1)) +
-        ylab("Log2 Expression") + xlab("")
-      plotReady <- TRUE
-    }
 
     # Fusion
-    else if(input$subtype == "Fusion" && length(input$subtype_options) > 0) {
-      query <- geneQuery(genes = input$gene, table = input$dataset)
-
-      tcga <- dbGetQuery(database,query)
-      query <- clinicalQuery(factors="*",
-                             subtypes=input$subtype_options,
-                             type="Fusion")
-      clinical <- dbGetQuery(database,query)
-      clinical <- merge(clinical,tcga, by="UPN")
-      clinical$Gene <- input$gene
-
-      g <- ggplot(clinical,aes(Fusion, Expression, text = paste0("UPN ID: ",UPN,"<br />Dataset: ", Short_hand_code))) + geom_quasirandom(size = 0.8) + theme_bw() +
-        ggtitle(paste0("Log2 Expression for ",input$gene)) +
-        theme(text=element_text(size=12, family="avenir", face="bold"),
-              axis.text=element_text(size=12, family="avenir", face="bold"),
-              axis.text.x = element_text(angle = 45, hjust = 1)) +
-        ylab("Log2 Expression") + xlab("")
-      plotReady <- TRUE
-    }
 
     # Mutations
-    else if(input$subtype == "Mutations") {
-      query <- geneQuery(factors = c("UPN","Value"),genes = input$gene, subset = input$subset)
-      tcga <- dbGetQuery(database,query)
-      tcga$Group <- "WT"
-
-      upns_with_mut <- as.character(mutation_table$UPN[which(mutation_table$Gene %in% input$mutation_status)])
-
-      query <- clinicalQuery(factors = "*",
-                             table = paste0(input$subset,"_Clinical"))
-      all_clinical <- dbGetQuery(database,query)
-
-      upns_with_health <- as.character(all_clinical$UPN[which(all_clinical$TCGA_Name %like% "Healthy")])
-
-      tcga$Group[tcga$UPN %in% upns_with_mut] <- input$mutation_status
-      tcga$Group[tcga$UPN %in% upns_with_health] <- all_clinical$FAB[tcga$UPN %in% upns_with_health]
-
-      tcga$Mutation <- paste(input$mutation_status,"WT")
-      tcga$Mutation[tcga$UPN %in% upns_with_mut] <- mutation_table$Mutation[tcga$UPN %in% upns_with_mut]
-      tcga$Mutation[tcga$UPN %in% upns_with_health] <- all_clinical$FAB[tcga$UPN %in% upns_with_health]
-      tcga$Gene <- input$gene
-
-      clinical <- merge(tcga,all_clinical[,c("UPN","Name","TCGA_ID")], by = "UPN")
-      clinical <- clinical[,c(1,6,7,3,4,2,5)]
-      #TODO ADD Phosphosite
-
-      factorLevels <- unique(clinical$Group)
-      factorLevels <- factorLevels[! factorLevels %in% mutationLevels]
-      factorLevels <- append(factorLevels,mutationLevels)
-      clinical$Group <- factor(clinical$Group,levels=factorLevels)
-
-      g <- ggplot(clinical,aes(Group, Value, text = paste0("UPN ID: ",Name,"<br />Mutation type: ", Mutation,"<br />TCGA Sample ID: ", TCGA_ID))) +
-        geom_quasirandom(size = 0.8) +
-        theme_bw() +
-        ggtitle(paste0("Log2 Expression for ",input$gene," with ",input$mutation_status, ": WT|MT")) +
-        theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=12, family="avenir", face="bold"),axis.text.x = element_text(angle = 45, hjust = 1)) +
-        ylab("Log2 Expression") + xlab("")
-      plotReady <- TRUE
-    }
 
     # Protein vs mRNAS
-    else if(input$subset == "Protein vs mRNAs") {
-      query <- geneQuery(genes = input$genes, subset = input$subset)
-      tcga <- dbGetQuery(database,query)
-      print(input$genes)
-
-    }
 
     # Plotting
     if(plotReady) {
