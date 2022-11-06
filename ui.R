@@ -4,18 +4,14 @@ ui <- fluidPage(
       selectInput(
         inputId = "dataset",
         label = "Select a dataset",
-        choices = c("beat_aml", "tcga_aml", "Proteomics") # TODO: Make dynamic based on db structure
+        choices = dataset$Short_hand_code
       ),
-      conditionalPanel(
-        #condition = "!(input.subset == 'Protein vs mRNAs')",
-        condition = "(input.subset != 'Protein vs mRNAs') || (input.dataset != 'Proteomics')",
-        # Dropdown to select which plot you want based on dataset
-        selectizeInput(
-          inputId = "subtype",
-          label = "Select an option",
-          choices = NULL,
-          multiple = FALSE
-        )
+      # Dropdown to select which plot you want based on dataset
+      selectizeInput(
+        inputId = "subtype",
+        label = "Select an option",
+        choices = c("Multiplot","FAB", "Cyto_risk", "Fusion", "Mutations"),
+        multiple = FALSE
       ),
       conditionalPanel(
         condition = "input.subtype == 'Multiplot' || input.subset == 'Protein vs mRNAs'",
@@ -40,7 +36,7 @@ ui <- fluidPage(
         )
       ),
       conditionalPanel(
-        condition = "!(input.subtype == 'Multiplot' || input.subtype == 'Mutations' || input.subset == 'Phosphosite' ||input.subset == 'Protein vs mRNAs')",
+        condition = "!(input.subtype == 'Multiplot' || input.subtype == 'Mutations')",
         # Checkbox to select subtype options
         checkboxGroupInput(
           inputId = "subtype_options",
