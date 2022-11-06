@@ -29,29 +29,17 @@ server <- function(input, output,session) {
   # Handle event when user selects subtype
   # Toggles several ui elements based on the dataset and subtype
   observeEvent(input$subtype, {
-    if(input$subtype == "Multiplot") {
-      updateSelectizeInput(session, "genes", label = "Multigene plot")
-    }
-
-    else if(input$subtype == "Mutations") {
-      updateSelectizeInput(session, "gene", label = "Gene to plot")
-    }
-
-    else {
-      updateSelectizeInput(session, "gene", label = "Gene to plot")
+    if(input$subtype != "Multiplot" && input$subtype != "Mutations") {
       query <- clinicalQuery(factors=c(input$subtype), unique=TRUE, type="Short_hand_code",subtypes=input$dataset)
-      print(input$subtype)
-      print(query)
       subtype_choices <- unlist(dbGetQuery(database,query),use.names = FALSE)
       subtype_choices <- str_sort(subtype_choices)
-      # TODO: Remove empty option
       updateCheckboxGroupInput(session,
                                "subtype_options",
                                label = "Subtypes",
                                choices = subtype_choices,
                                selected = subtype_choices)
     }
-
+    # TODO: Add mutations dropdown update
   })
 
   # Handles output for plot

@@ -14,22 +14,22 @@ ui <- fluidPage(
         multiple = FALSE
       ),
       conditionalPanel(
-        condition = "input.subtype == 'Multiplot' || input.subset == 'Protein vs mRNAs'",
+        condition = "input.subtype == 'Multiplot'",
         # Dropdown to select genes
         selectizeInput(
           inputId = "genes",
-          label = NULL,
+          label = "Multigene plot",
           choices = NULL,
           multiple = TRUE,
           selected = NULL
         )
       ),
       conditionalPanel(
-        condition = "!(input.subtype == 'Multiplot' || input.subset == 'Protein vs mRNAs')",
+        condition = "!(input.subtype == 'Multiplot')",
         # Dropdown to select gene
         selectizeInput(
           inputId = "gene",
-          label = NULL,
+          label = "Gene to plot",
           choices = NULL,
           multiple = FALSE,
           selected = NULL
