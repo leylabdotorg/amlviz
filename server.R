@@ -24,22 +24,21 @@ server <- function(input, output,session) {
     geneChoices <- unique(dbGetQuery(database, query)) # TODO: Sort this
     updateSelectizeInput(session, "genes", choices = geneChoices$Gene, server = TRUE)
     updateSelectizeInput(session, "gene", choices = geneChoices$Gene, server = TRUE)
-    itemPlot <<- "Gene"
   })
 
   # Handle event when user selects subtype
   # Toggles several ui elements based on the dataset and subtype
   observeEvent(input$subtype, {
     if(input$subtype == "Multiplot") {
-      updateSelectizeInput(session, "genes", label = paste("Multi",tolower(itemPlot)," plot",sep=""))
+      updateSelectizeInput(session, "genes", label = "Multigene plot")
     }
 
     else if(input$subtype == "Mutations") {
-      updateSelectizeInput(session, "gene", label = paste(itemPlot,"to plot"))
+      updateSelectizeInput(session, "gene", label = "Gene to plot")
     }
 
     else {
-      updateSelectizeInput(session, "gene", label = paste(itemPlot,"to plot"))
+      updateSelectizeInput(session, "gene", label = "Gene to plot")
       query <- clinicalQuery(factors=c(input$subtype), unique=TRUE, type="Short_hand_code",subtypes=input$dataset)
       print(input$subtype)
       print(query)
