@@ -1,15 +1,27 @@
 server <- function(input, output,session) {
-  updateSelectInput(session, "dataset", choices = dataset$Short_hand_code,
-                    selected = NULL)
-
   # Handle event when user selects dataset
   # Changes gene list and available types of plots based on the dataset
   # TODO: Change db to have list of available plots
   observeEvent(input$dataset, {
-    print(input$dataset)
-    subtype2 <- c("Multiplot","FAB", "Cytogenetics", "Fusion", "Mutations")
-    updateSelectizeInput(session, 'subtype', choices = subtype2, server = TRUE)
-    geneChoices <- unique(dbGetQuery(database, paste("SELECT Gene FROM", input$dataset,";"))) # TODO: Sort this
+    # TODO: Add update subtype when we get other subtypes
+
+    # Update subtype options
+    if(input$subtype != "Multiplot" && input$subtype != "Mutations") {
+      query <- clinicalQuery(factors=c(input$subtype), unique=TRUE, type="Short_hand_code",subtypes=input$dataset)
+      subtype_choices <- unlist(dbGetQuery(database,query),use.names = FALSE)
+      subtype_choices <- str_sort(subtype_choices)
+      # TODO: Remove empty option
+      updateCheckboxGroupInput(session,
+                               "subtype_options",
+                               label = "Subtypes",
+                               choices = subtype_choices,
+                               selected = subtype_choices)
+    }
+
+    # Update gene and genes
+    query <- paste("SELECT DISTINCT Gene FROM", input$dataset, ";")
+    print(query)
+    geneChoices <- unique(dbGetQuery(database, query)) # TODO: Sort this
     updateSelectizeInput(session, "genes", choices = geneChoices$Gene, server = TRUE)
     updateSelectizeInput(session, "gene", choices = geneChoices$Gene, server = TRUE)
     itemPlot <<- "Gene"
@@ -21,9 +33,16 @@ server <- function(input, output,session) {
     if(input$subtype == "Multiplot") {
       updateSelectizeInput(session, "genes", label = paste("Multi",tolower(itemPlot)," plot",sep=""))
     }
-    else if(input$subtype == "FAB") {
+
+    else if(input$subtype == "Mutations") {
       updateSelectizeInput(session, "gene", label = paste(itemPlot,"to plot"))
-      query <- paste0("SELECT DISTINCT FAB FROM master_clinical;")
+    }
+
+    else {
+      updateSelectizeInput(session, "gene", label = paste(itemPlot,"to plot"))
+      query <- clinicalQuery(factors=c(input$subtype), unique=TRUE, type="Short_hand_code",subtypes=input$dataset)
+      print(input$subtype)
+      print(query)
       subtype_choices <- unlist(dbGetQuery(database,query),use.names = FALSE)
       subtype_choices <- str_sort(subtype_choices)
       # TODO: Remove empty option
@@ -33,31 +52,7 @@ server <- function(input, output,session) {
                                choices = subtype_choices,
                                selected = subtype_choices)
     }
-    else if(input$subtype == "Cytogenetics") {
-      updateSelectizeInput(session, "gene", label = paste(itemPlot,"to plot"))
-      query <- paste0("SELECT DISTINCT Cyto_Risk FROM master_clinical;")
-      cyto_choices <- unlist(dbGetQuery(database,query),use.names = FALSE)
-      cyto_choices <- str_sort(cyto_choices)
-      updateCheckboxGroupInput(session,
-                               "subtype_options",
-                               label = "Criteria",
-                               choices = cyto_choices,
-                               selected = cyto_choices)
-    }
-    else if(input$subtype == "Fusion") {
-      updateSelectizeInput(session, "gene", label = paste(itemPlot,"to plot"))
-      query <- paste0("SELECT DISTINCT Fusion FROM master_clinical;")
-      fusion_choices <- unlist(dbGetQuery(database,query),use.names = FALSE)
-      fusion_choices <- str_sort(fusion_choices)
-      updateCheckboxGroupInput(session,
-                               "subtype_options",
-                               label = "Criteria",
-                               choices = fusion_choices,
-                               selected = fusion_choices)
-    }
-    else if(input$subtype == "Mutations") {
-      updateSelectizeInput(session, "gene", label = paste(itemPlot,"to plot"))
-    }
+
   })
 
   # Handles output for plot
@@ -67,7 +62,6 @@ server <- function(input, output,session) {
 
     # Multiplot
     if(input$subtype == "Multiplot" && length(input$genes) > 0) {
-      #query <- geneQuery(genes = input$genes,subset = input$subset)
       query <- geneQuery(genes = input$genes, table = input$dataset)
       print(query)
       tcga <- dbGetQuery(database,query)
@@ -87,7 +81,7 @@ server <- function(input, output,session) {
     }
 
     # Subtype
-    else if(input$subtype == "Subtype" && length(input$subtype_options) > 0) {
+    else if(input$subtype == "FAB" && length(input$subtype_options) > 0) {
       query <- geneQuery(genes = input$gene, table = input$dataset)
 
       tcga <- dbGetQuery(database,query)
@@ -114,7 +108,6 @@ server <- function(input, output,session) {
 
     # Mutations
 
-    # Protein vs mRNAS
 
     # Plotting
     if(plotReady) {
