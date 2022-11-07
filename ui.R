@@ -10,7 +10,7 @@ ui <- fluidPage(
       selectizeInput(
         inputId = "subtype",
         label = "Select an option",
-        choices = c("Multiplot","FAB", "Cyto_risk", "Fusion", "Mutations"),
+        choices = c("Multiplot","FAB", "Cyto_risk", "Fusion","Mutations"),
         multiple = FALSE
       ),
       conditionalPanel(
@@ -36,7 +36,7 @@ ui <- fluidPage(
         )
       ),
       conditionalPanel(
-        condition = "!(input.subtype == 'Multiplot' || input.subtype == 'Mutations')",
+        condition = "!(input.subtype == 'Multiplot' || input.subtype == 'Mutation')",
         # Checkbox to select subtype options
         checkboxGroupInput(
           inputId = "subtype_options",
@@ -45,12 +45,12 @@ ui <- fluidPage(
         )
       ),
       conditionalPanel(
-        condition = "input.subtype == 'Mutations'",
-        # Dropdown specifically for mutations
+        condition = "input.subtype == 'Mutation'",
+        # Dropdown specifically for Mutation
         selectInput(
           inputId = "mutation_status",
           label = "Mutation Status",
-          choices = mutation_specific_genes$V1
+          choices = NULL
         )
       )
     ),
