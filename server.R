@@ -17,4 +17,26 @@ server <- function(input, output,session) {
       # TODO: Remove Genes and Gene when a dataset is changed
     }
   })
+
+  # Handle event when user selects subtype
+  # Toggles several ui elements based on the dataset and subtype
+  observeEvent(input$subtype, {
+    if(input$subtype != "") {
+      if(input$subtype != "Multiplot" && input$subtype != "Mutations") {
+        query <- clinicalQuery(factors=c(input$subtype), unique=TRUE, type="Short_hand_code",subtypes=input$dataset)
+        subtype_choices <- unlist(dbGetQuery(database,query),use.names = FALSE)
+        subtype_choices <- str_sort(subtype_choices)
+        updateCheckboxGroupInput(session,
+                                 "subtype_options",
+                                 label = "Subtypes",
+                                 choices = subtype_choices,
+                                 selected = subtype_choices)
+      }
+
+      else if(input$subtype == "Mutations") {
+
+      }
+
+    }
+  })
 }
