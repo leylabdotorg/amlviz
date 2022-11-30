@@ -16,7 +16,7 @@ ui <- fluidPage(
           label = "Select an option",
           choices = NULL,
           multiple = FALSE,
-          selected = NULL
+          selected = character(0)
         )
       ),
       conditionalPanel(
@@ -27,7 +27,7 @@ ui <- fluidPage(
           label = "Multigene plot",
           choices = NULL,
           multiple = TRUE,
-          selected = NULL
+          selected = character(0)
         )
       ),
       conditionalPanel(
@@ -38,7 +38,7 @@ ui <- fluidPage(
           label = "Gene to plot",
           choices = NULL,
           multiple = FALSE,
-          selected = NULL
+          selected = character(0)
         )
       ),
       conditionalPanel(
@@ -47,18 +47,18 @@ ui <- fluidPage(
         checkboxGroupInput(
           inputId = "subtype_options",
           label = NULL,
-          choices = NULL
+          choices = character(0)
         )
       ),
-      # conditionalPanel(
-      #   condition = "input.subtype == 'Mutation'",
-      #   # Dropdown specifically for Mutation
-      #   selectInput(
-      #     inputId = "mutation_status",
-      #     label = "Mutation Status",
-      #     choices = NULL
-      #   )
-      # )
+      conditionalPanel(
+        condition = "input.subtype == 'Mutations'",
+        # Dropdown specifically for Mutation
+        selectizeInput(
+          inputId = "mutation_status",
+          label = "Mutation Status",
+          choices = character(0)
+        )
+      )
     ),
     mainPanel(
       plotlyOutput("plot", height = "500px")

@@ -6,13 +6,13 @@ server <- function(input, output,session) {
     if(input$dataset != "") {
       # Update available plots based on datasets
       source(paste0("configs/",input$dataset,".R"), local = TRUE)
-      updateSelectInput(session, "subtype",choices = c("",as.character(available_plots)), selected = NULL)
+      updateSelectInput(session, "subtype",choices = c("",as.character(available_plots)), selected = character(0))
 
       # Update gene and genes
       query <- paste("SELECT DISTINCT Gene FROM", input$dataset, ";")
       geneChoices <- dbGetQuery(database, query) # TODO: Sort this
-      updateSelectizeInput(session, "genes", choices = c("",as.character(geneChoices$Gene)),selected = NULL, server = TRUE)
-      updateSelectizeInput(session, "gene", choices = c("",as.character(geneChoices$Gene)),selected = NULL, server = TRUE)
+      updateSelectizeInput(session, "genes", choices = c("",as.character(geneChoices$Gene)),selected = character(0), server = TRUE)
+      updateSelectizeInput(session, "gene", choices = c("",as.character(geneChoices$Gene)),selected = character(0), server = TRUE)
 
       # TODO: Remove Genes and Gene when a dataset is changed
     }
@@ -32,9 +32,11 @@ server <- function(input, output,session) {
                                  choices = subtype_choices,
                                  selected = subtype_choices)
       }
-
       else if(input$subtype == "Mutations") {
-
+        query <- paste0("SELECT DISTINCT Mutation FROM master_mutation WHERE Short_hand_code ='",input$dataset, "';")
+        mutation_choices <- dbGetQuery(database, query)
+        print(mutation_choices)
+        updateSelectizeInput(session, "mutation_status", choices = c("",as.character(mutation_choices$Mutation)),selected = NULL, server = TRUE)
       }
     }
   })
@@ -87,14 +89,38 @@ server <- function(input, output,session) {
 
     # Mutations
     else if(input$subtype == "Mutations") {
+      query <- geneQuery(genes = input$gene, table = input$dataset)
+      tcga <- dbGetQuery(database,query)
+      tcga$Group <- "WT"
 
+      query <- paste0("SELECT DISTINCT UPN FROM master_mutation WHERE Short_hand_code='",input$dataset,"' AND Mutation='",input$mutation_status,"' AND Gene='",input$gene,"';")
+      print(query)
+      upns_with_mut <- dbGetQuery(database,query)
+      #upns_with_mut <- as.character(mutation_table$UPN[which(mutation_table$Gene %in% input$mutation_status)])
 
-      g <- ggplot(clinical,aes(Mutation, Expression, text = paste0("UPN ID: ",UPN,"<br />Dataset: ", Short_hand_code))) + geom_quasirandom(size = 0.8) + theme_bw() +
-        ggtitle(paste0("Log2 Expression for ",input$gene)) +
-        theme(text=element_text(size=12, family="avenir", face="bold"),
-              axis.text=element_text(size=12, family="avenir", face="bold"),
-              axis.text.x = element_text(angle = 45, hjust = 1)) +
+      query <- paste0("SELECT * FROM master_clinical WHERE Short_hand_code='",input$dataset,"';")
+      all_clinical <- dbGetQuery(database,query)
+
+      tcga$Group[tcga$UPN %in% upns_with_mut] <- input$mutation_status
+
+      tcga$Mutation <- paste(input$mutation_status,"WT")
+      query <- paste0("SELECT UPN,Mutation,Mutation_type FROM master_mutation WHERE Short_hand_code ='",input$dataset, "';")
+      mutations <- dbGetQuery(database,query)
+      tcga$Mutation[tcga$UPN %in% upns_with_mut] <- mutations$Mutation_type[tcga$UPN %in% upns_with_mut]
+      tcga$Gene <- input$gene
+
+      clinical <- merge(tcga,all_clinical, by = "UPN")
+
+      # Todo Readd factors
+      print(clinical$Group)
+
+      g <- ggplot(clinical,aes(Group, Expression, text = paste0("UPN ID: ",UPN,"<br />Mutation type: ", Mutation))) +
+        geom_quasirandom(size = 0.8) +
+        theme_bw() +
+        ggtitle(paste0("Log2 Expression for ",input$gene," with ",input$mutation_status, ": WT|MT")) +
+        theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=12, family="avenir", face="bold"),axis.text.x = element_text(angle = 45, hjust = 1)) +
         ylab("Log2 Expression") + xlab("")
+      plotReady <- TRUE
     }
 
     # Plotting
