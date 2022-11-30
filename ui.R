@@ -11,7 +11,7 @@ ui <- fluidPage(
         inputId = "subtype",
         label = "Select an option",
         choices = c("Multiplot","FAB", "Cyto_risk", "Fusion","Mutations"),
-        multiple = FALSE
+        multiple = FALSE,
       ),
       conditionalPanel(
         condition = "input.subtype == 'Multiplot'",
@@ -45,7 +45,7 @@ ui <- fluidPage(
         )
       ),
       conditionalPanel(
-        condition = "input.subtype == 'Mutation'",
+        condition = "input.subtype == 'Mutations'",
         # Dropdown specifically for Mutation
         selectInput(
           inputId = "mutation_status",
