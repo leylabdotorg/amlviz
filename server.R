@@ -44,88 +44,89 @@ server <- function(input, output,session) {
   # Handles output for plot
   output$plot <- renderPlotly({
     plotReady <- FALSE
-
-    query <- geneQuery(genes = input$genes, table = input$dataset)
-    tcga <- dbGetQuery(database,query)
-
-    # Multiplot
-    if(input$subtype == "Multiplot" && length(input$genes) > 0) {
+    if(input$dataset != "") {
       query <- geneQuery(genes = input$genes, table = input$dataset)
       tcga <- dbGetQuery(database,query)
 
-      query <- clinicalQuery(factors = "*")
-      clinical <- dbGetQuery(database,query)
-      clinical <- merge(tcga, clinical, by="UPN")
+      # Multiplot
+      if(input$subtype == "Multiplot" && length(input$genes) > 0) {
+        query <- geneQuery(genes = input$genes, table = input$dataset)
+        tcga <- dbGetQuery(database,query)
 
-      g <- ggplot(clinical,aes(fill=Gene, y=Expression, x=UPN, text = paste0("UPN ID: ",UPN,"<br />Dataset: ", Short_hand_code))) + geom_bar(position="dodge", stat="identity") + theme_bw() +
-        theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=10, family="avenir", face="bold"),
-              axis.title=element_text(size=12, family="avenir", face="bold"),
-              axis.text.x = element_text(angle = 90, hjust = 1)) +
-        ggtitle("Multiple protein view") +
-        ylab("Log2 Expression") + xlab("")
-      plotReady <- TRUE
-    }
+        query <- clinicalQuery(factors = "*")
+        clinical <- dbGetQuery(database,query)
+        clinical <- merge(tcga, clinical, by="UPN")
 
-    # Subtype
-    else if(length(input$subtype_options) > 0 && input$gene != "") {
-      query <- geneQuery(genes = input$gene, table = input$dataset)
-      tcga <- dbGetQuery(database,query)
+        g <- ggplot(clinical,aes(fill=Gene, y=Expression, x=UPN, text = paste0("UPN ID: ",UPN,"<br />Dataset: ", Short_hand_code))) + geom_bar(position="dodge", stat="identity") + theme_bw() +
+          theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=10, family="avenir", face="bold"),
+                axis.title=element_text(size=12, family="avenir", face="bold"),
+                axis.text.x = element_text(angle = 90, hjust = 1)) +
+          ggtitle("Multiple protein view") +
+          ylab("Log2 Expression") + xlab("")
+        plotReady <- TRUE
+      }
 
-      query <- clinicalQuery(factors="*",
-                             subtypes=input$subtype_options,
-                             type=input$subtype)
-      clinical <- dbGetQuery(database,query)
-      clinical <- merge(tcga, clinical, by="UPN")
+      # Subtype
+      else if(length(input$subtype_options) > 0 && input$gene != "") {
+        query <- geneQuery(genes = input$gene, table = input$dataset)
+        tcga <- dbGetQuery(database,query)
+
+        query <- clinicalQuery(factors="*",
+                               subtypes=input$subtype_options,
+                               type=input$subtype)
+        clinical <- dbGetQuery(database,query)
+        clinical <- merge(tcga, clinical, by="UPN")
 
 
-      g <- ggplot(clinical,aes(eval(as.name(input$subtype)), Expression, text = paste0("UPN ID: ",UPN,"<br />Dataset: ", Short_hand_code))) + geom_quasirandom(size = 0.8) + theme_bw() +
-        ggtitle(paste0("Log2 Expression for ",input$gene)) +
-        theme(text=element_text(size=12, family="avenir", face="bold"),
-              axis.text=element_text(size=12, family="avenir", face="bold"),
-              axis.text.x = element_text(angle = 45, hjust = 1)) +
-        ylab("Log2 Expression") + xlab("")
-      plotReady <- TRUE
-    }
+        g <- ggplot(clinical,aes(eval(as.name(input$subtype)), Expression, text = paste0("UPN ID: ",UPN,"<br />Dataset: ", Short_hand_code))) + geom_quasirandom(size = 0.8) + theme_bw() +
+          ggtitle(paste0("Log2 Expression for ",input$gene)) +
+          theme(text=element_text(size=12, family="avenir", face="bold"),
+                axis.text=element_text(size=12, family="avenir", face="bold"),
+                axis.text.x = element_text(angle = 45, hjust = 1)) +
+          ylab("Log2 Expression") + xlab("")
+        plotReady <- TRUE
+      }
 
-    # Mutations
-    else if(input$subtype == "Mutations") {
-      query <- geneQuery(genes = input$gene, table = input$dataset)
-      tcga <- dbGetQuery(database,query)
-      tcga$Group <- "WT"
+      # Mutations
+      else if(input$subtype == "Mutations") {
+        query <- geneQuery(genes = input$gene, table = input$dataset)
+        tcga <- dbGetQuery(database,query)
+        tcga$Group <- "WT"
 
-      query <- paste0("SELECT DISTINCT UPN FROM master_mutation WHERE Short_hand_code='",input$dataset,"' AND Mutation='",input$mutation_status,"' AND Gene='",input$gene,"';")
-      print(query)
-      upns_with_mut <- dbGetQuery(database,query)
-      #upns_with_mut <- as.character(mutation_table$UPN[which(mutation_table$Gene %in% input$mutation_status)])
+        query <- paste0("SELECT DISTINCT UPN FROM master_mutation WHERE Short_hand_code='",input$dataset,"' AND Mutation='",input$mutation_status,"' AND Gene='",input$gene,"';")
+        print(query)
+        upns_with_mut <- dbGetQuery(database,query)
+        #upns_with_mut <- as.character(mutation_table$UPN[which(mutation_table$Gene %in% input$mutation_status)])
 
-      query <- paste0("SELECT * FROM master_clinical WHERE Short_hand_code='",input$dataset,"';")
-      all_clinical <- dbGetQuery(database,query)
+        query <- paste0("SELECT * FROM master_clinical WHERE Short_hand_code='",input$dataset,"';")
+        all_clinical <- dbGetQuery(database,query)
 
-      tcga$Group[tcga$UPN %in% upns_with_mut] <- input$mutation_status
+        tcga$Group[tcga$UPN %in% upns_with_mut] <- input$mutation_status
 
-      tcga$Mutation <- paste(input$mutation_status,"WT")
-      query <- paste0("SELECT UPN,Mutation,Mutation_type FROM master_mutation WHERE Short_hand_code ='",input$dataset, "';")
-      mutations <- dbGetQuery(database,query)
-      tcga$Mutation[tcga$UPN %in% upns_with_mut] <- mutations$Mutation_type[tcga$UPN %in% upns_with_mut]
-      tcga$Gene <- input$gene
+        tcga$Mutation <- paste(input$mutation_status,"WT")
+        query <- paste0("SELECT UPN,Mutation,Mutation_type FROM master_mutation WHERE Short_hand_code ='",input$dataset, "';")
+        mutations <- dbGetQuery(database,query)
+        tcga$Mutation[tcga$UPN %in% upns_with_mut] <- mutations$Mutation_type[tcga$UPN %in% upns_with_mut]
+        tcga$Gene <- input$gene
 
-      clinical <- merge(tcga,all_clinical, by = "UPN")
+        clinical <- merge(tcga,all_clinical, by = "UPN")
 
-      # Todo Readd factors
-      print(clinical$Group)
+        # Todo Readd factors
+        print(clinical$Group)
 
-      g <- ggplot(clinical,aes(Group, Expression, text = paste0("UPN ID: ",UPN,"<br />Mutation type: ", Mutation))) +
-        geom_quasirandom(size = 0.8) +
-        theme_bw() +
-        ggtitle(paste0("Log2 Expression for ",input$gene," with ",input$mutation_status, ": WT|MT")) +
-        theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=12, family="avenir", face="bold"),axis.text.x = element_text(angle = 45, hjust = 1)) +
-        ylab("Log2 Expression") + xlab("")
-      plotReady <- TRUE
-    }
+        g <- ggplot(clinical,aes(Group, Expression, text = paste0("UPN ID: ",UPN,"<br />Mutation type: ", Mutation))) +
+          geom_quasirandom(size = 0.8) +
+          theme_bw() +
+          ggtitle(paste0("Log2 Expression for ",input$gene," with ",input$mutation_status, ": WT|MT")) +
+          theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=12, family="avenir", face="bold"),axis.text.x = element_text(angle = 45, hjust = 1)) +
+          ylab("Log2 Expression") + xlab("")
+        plotReady <- TRUE
+      }
 
-    # Plotting
-    if(plotReady) {
-      ggplotly(g, tooltip="text")
+      # Plotting
+      if(plotReady) {
+        ggplotly(g, tooltip="text")
+      }
     }
 
   })
