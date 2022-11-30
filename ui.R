@@ -4,41 +4,43 @@ ui <- fluidPage(
       selectInput(
         inputId = "dataset",
         label = "Select a dataset",
-        choices = dataset$Short_hand_code,
-        selected = NULL
+        choices = c("",as.character(dataset$Short_hand_code)),
+        selected = NULL,
+        multiple = FALSE
       ),
       # Dropdown to select which plot you want based on dataset
       conditionalPanel(
-        condition = "input.dataset != null",
-        selectizeInput(
+        condition = "input.dataset != ''",
+        selectInput(
           inputId = "subtype",
           label = "Select an option",
           choices = NULL,
           multiple = FALSE,
+          selected = NULL
         )
-        ),
-      # conditionalPanel(
-      #   condition = "input.subtype == 'Multiplot'",
-      #   # Dropdown to select genes
-      #   selectizeInput(
-      #     inputId = "genes",
-      #     label = "Multigene plot",
-      #     choices = NULL,
-      #     multiple = TRUE,
-      #     selected = NULL
-      #   )
-      # ),
-      # conditionalPanel(
-      #   condition = "!(input.subtype == 'Multiplot')",
-      #   # Dropdown to select gene
-      #   selectizeInput(
-      #     inputId = "gene",
-      #     label = "Gene to plot",
-      #     choices = NULL,
-      #     multiple = FALSE,
-      #     selected = NULL
-      #   )
-      # ),
+      ),
+      conditionalPanel(
+        condition = "input.subtype == 'Multiplot' && input.subtype != ''",
+        # Dropdown to select genes
+        selectizeInput(
+          inputId = "genes",
+          label = "Multigene plot",
+          choices = NULL,
+          multiple = TRUE,
+          selected = NULL
+        )
+      ),
+      conditionalPanel(
+        condition = "!(input.subtype == 'Multiplot') && input.subtype != ''",
+        # Dropdown to select gene
+        selectizeInput(
+          inputId = "gene",
+          label = "Gene to plot",
+          choices = NULL,
+          multiple = FALSE,
+          selected = NULL
+        )
+      ),
       # conditionalPanel(
       #   condition = "!(input.subtype == 'Multiplot' || input.subtype == 'Mutation')",
       #   # Checkbox to select subtype options
@@ -58,8 +60,8 @@ ui <- fluidPage(
       #   )
       # )
     ),
-    # mainPanel(
-    #   plotlyOutput("plot", height = "500px")
-    # )
+    mainPanel(
+      #plotlyOutput("plot", height = "500px")
+    )
   )
 )
