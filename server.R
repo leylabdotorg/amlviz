@@ -1,9 +1,11 @@
 server <- function(input, output,session) {
-
   # Handle event when user selects dataset
   # Changes gene list and available types of plots based on the dataset
   observeEvent(input$dataset, {
     if(input$dataset != "") {
+      shinyjs::show(id = "subtype") # Show subtype when dataset is selected
+      hideAllElements() # Hide old options when new dataset is selected
+
       # Update available plots based on datasets
       source(paste0("configs/",input$dataset,".R"), local = TRUE)
       updateSelectInput(session, "subtype",choices = c("",as.character(available_plots)), selected = character(0))
@@ -13,8 +15,6 @@ server <- function(input, output,session) {
       geneChoices <- dbGetQuery(database, query) # TODO: Sort this
       updateSelectizeInput(session, "genes", choices = c("",as.character(geneChoices$Gene)),selected = character(0), server = TRUE)
       updateSelectizeInput(session, "gene", choices = c("",as.character(geneChoices$Gene)),selected = character(0), server = TRUE)
-
-      # TODO: Remove Genes and Gene when a dataset is changed
     }
   })
 
@@ -22,7 +22,11 @@ server <- function(input, output,session) {
   # Toggles several ui elements based on the dataset and subtype
   observeEvent(input$subtype, {
     if(input$subtype != "") {
+      hideAllElements()
+
       if(input$subtype != "Multiplot" && input$subtype != "Mutations") {
+        shinyjs::show(id = "gene")
+        shinyjs::show(id = "subtype_options")
         query <- clinicalQuery(factors=c(input$subtype), unique=TRUE, type="Short_hand_code",subtypes=input$dataset)
         subtype_choices <- unlist(dbGetQuery(database,query),use.names = FALSE)
         subtype_choices <- str_sort(subtype_choices)
@@ -32,7 +36,14 @@ server <- function(input, output,session) {
                                  choices = subtype_choices,
                                  selected = subtype_choices)
       }
+      else if(input$subtype == "Multiplot") {
+        shinyjs::show(id = "genes")
+      }
+
       else if(input$subtype == "Mutations") {
+        shinyjs::show(id = "gene")
+        shinyjs::show(id = "mutation_status")
+
         query <- paste0("SELECT DISTINCT Mutation FROM master_mutation WHERE Short_hand_code ='",input$dataset, "';")
         mutation_choices <- dbGetQuery(database, query)
         print(mutation_choices)
