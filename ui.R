@@ -1,4 +1,5 @@
 ui <- fluidPage(
+  shinyjs::useShinyjs(),
   sidebarLayout(
     sidebarPanel(
       selectInput(
@@ -8,19 +9,16 @@ ui <- fluidPage(
         selected = NULL,
         multiple = FALSE
       ),
-      # Dropdown to select which plot you want based on dataset
-      conditionalPanel(
-        condition = "input.dataset != ''",
+      # All elements are hidden at start because they will vary based on dataset
+      shinyjs::hidden(
+        # Dropdown to select which plot you want based on dataset
         selectInput(
           inputId = "subtype",
           label = "Select an option",
           choices = NULL,
           multiple = FALSE,
           selected = character(0)
-        )
-      ),
-      conditionalPanel(
-        condition = "input.subtype == 'Multiplot' && input.subtype != ''",
+        ),
         # Dropdown to select genes
         selectizeInput(
           inputId = "genes",
@@ -28,10 +26,7 @@ ui <- fluidPage(
           choices = NULL,
           multiple = TRUE,
           selected = character(0)
-        )
-      ),
-      conditionalPanel(
-        condition = "!(input.subtype == 'Multiplot') && input.subtype != ''",
+        ),
         # Dropdown to select gene
         selectizeInput(
           inputId = "gene",
@@ -39,19 +34,13 @@ ui <- fluidPage(
           choices = NULL,
           multiple = FALSE,
           selected = character(0)
-        )
-      ),
-      conditionalPanel(
-        condition = "!(input.subtype == 'Multiplot' || input.subtype == 'Mutations') && input.subtype != ''",
+        ),
         # Checkbox to select subtype options
         checkboxGroupInput(
           inputId = "subtype_options",
           label = NULL,
           choices = character(0)
-        )
-      ),
-      conditionalPanel(
-        condition = "input.subtype == 'Mutations'",
+        ),
         # Dropdown specifically for Mutation
         selectizeInput(
           inputId = "mutation_status",
@@ -59,7 +48,7 @@ ui <- fluidPage(
           choices = character(0)
         )
       )
-    ),
+      ),
     mainPanel(
       plotlyOutput("plot", height = "500px")
     )

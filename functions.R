@@ -43,3 +43,10 @@ clinicalQuery <- function(factors=c("UPN","Short_hand_code"), unique=FALSE,table
   }
   return(query)
 }
+
+hideAllElements <- function() {
+  shinyjs::hide(id = "genes")
+  shinyjs::hide(id = "gene")
+  shinyjs::hide(id = "subtype_options")
+  shinyjs::hide(id = "mutation_status")
+}
