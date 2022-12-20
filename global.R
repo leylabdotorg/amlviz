@@ -10,24 +10,10 @@ source("functions.R")
 
 
 # database
-proteomics <- dbConnect(RSQLite::SQLite(), "Proteomics.db")
+# loaded once per server rather than every client
+# proteomics <- dbConnect(RSQLite::SQLite(), "Proteomics.db")
 database <- dbConnect(RSQLite::SQLite(), "master_shiny_app.db")
 print("Connected to database")
-
-# database vars
-# choices are only loaded once per server rather than every client
-TMT_choices <- unique(dbGetQuery(proteomics, "SELECT Gene FROM Genes WHERE Type='TMT';"))
-LFQ_choices <- unique(dbGetQuery(proteomics, "SELECT Gene FROM Genes WHERE Type='LFQ';"))
-phosphosite_choices <- dbGetQuery(proteomics, "SELECT Gene FROM Genes WHERE Type='Phosphosite';")
-phosphosite_choices <- as.data.frame(lapply(phosphosite_choices, function (x) {gsub("_.*$", "", x)}))
-phosphosite_choices <- unique(phosphosite_choices)
-mRNA_choices <- unique(dbGetQuery(proteomics, "SELECT Gene FROM Genes WHERE Type='mRNA';"))
-
-# local files
-mutation_specific_genes <- read.table(file = "data/mutation_specific_genes.txt", sep="\t", skipNul=T, encoding="UTF-8", quote = "")
-mutation_table <- read.table(file = "data/mutations.txt", header=T, sep="\t", skipNul=T, encoding="UTF-8", quote = "")
-genenames_corr <- read.table("data/correlation_genes.txt", stringsAsFactors=F, header=F, sep = "\t", skipNul=T, encoding="UTF-8", quote = "")
-
 
 query <- paste0("SELECT * FROM master_database;")
 dataset <- dbGetQuery(database,query)
