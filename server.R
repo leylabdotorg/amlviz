@@ -72,7 +72,7 @@ server <- function(input, output,session) {
           theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=10, family="avenir", face="bold"),
                 axis.title=element_text(size=12, family="avenir", face="bold"),
                 axis.text.x = element_text(angle = 90, hjust = 1)) +
-          ggtitle("Multiple protein view") +
+          ggtitle("Multiple gene view") +
           ylab("Log2 Expression") + xlab("")
         plotReady <- TRUE
       }
