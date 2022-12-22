@@ -1,24 +1,20 @@
-geneQuery <- function(factors=c("UPN","Gene","Expression"), unique=FALSE, table="Genes", genes, subset=NULL) {
-  #SELECT UPN,Gene,Value FROM Genes WHERE (Gene='DNMT3A' OR Gene='TP53') AND Type='TMT';
+geneQuery <- function(factors=c("UPN","Gene","Expression"), unique=FALSE, table="Genes", genes) {
+  # "SELECT UPN,Gene,Expression FROM Genes WHERE (Gene='DNMT3A' OR Gene='TP53');"
+
+  query <- "SELECT"
+
+  if(unique) {
+    query <- paste(query, "DISTINCT")
+  }
 
   factors <- paste(factors,collapse=",")
 
-  if(unique) {
-    query <- paste("SELECT DISTINCT", factors, "FROM", table, "WHERE (")
-  }
-  else {
-    query <- paste("SELECT", factors, "FROM", table, "WHERE (")
-  }
+  query <- paste(query, factors, "FROM", table, "WHERE ")
 
-  genesToQuery <- paste("Gene='",genes,"'",sep="",collapse=" OR ")
-  query <- paste(query,genesToQuery,")",sep="")
-  if(is.null(subset)) {
-    query <- paste0(query,";")
-  }
-  else {
-    # TODO: Change Proteomics to subset
-    query <- paste(query," AND Type='",subset,"';",sep="")
-  }
+  genesToQuery <- paste0("Gene='",genes,"'",collapse=" OR ")
+
+  query <- paste0(query,genesToQuery)
+
   return(query)
 }
 
