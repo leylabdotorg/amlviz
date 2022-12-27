@@ -11,8 +11,8 @@ server <- function(input, output,session) {
       updateSelectInput(session, "subtype",choices = c("",as.character(available_plots)), selected = character(0))
 
       # Update gene and genes
-      query <- paste("SELECT DISTINCT Gene FROM", input$dataset, ";")
-      geneChoices <- dbGetQuery(database, query) # TODO: Sort this
+      query <- geneQuery(factors = c("Gene"), table = input$dataset, unique = TRUE, sort = TRUE)
+      geneChoices <- dbGetQuery(database, query)
       updateSelectizeInput(session, "genes", choices = c("",as.character(geneChoices$Gene)),selected = character(0), server = TRUE)
       updateSelectizeInput(session, "gene", choices = c("",as.character(geneChoices$Gene)),selected = character(0), server = TRUE)
     }
