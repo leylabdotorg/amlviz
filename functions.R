@@ -1,19 +1,21 @@
-geneQuery <- function(factors=c("UPN","Gene","Expression"), unique=FALSE, table="Genes", genes) {
-  # "SELECT UPN,Gene,Expression FROM Genes WHERE (Gene='DNMT3A' OR Gene='TP53');"
-
+geneQuery <- function(factors=c("UPN","Gene","Expression"), table="Genes", genes=NULL, unique=FALSE, sort=FALSE) {
   query <- "SELECT"
 
   if(unique) {
     query <- paste(query, "DISTINCT")
   }
 
-  factors <- paste(factors,collapse=",")
+  factors <- paste(factors, collapse=",")
+  query <- paste(query, factors, "FROM", table)
 
-  query <- paste(query, factors, "FROM", table, "WHERE ")
+  if(!is.null(genes)) {
+    genesToQuery <- paste0("Gene='",genes,"'",collapse=" OR ")
+    query <- paste(query, "WHERE", genesToQuery)
+  }
 
-  genesToQuery <- paste0("Gene='",genes,"'",collapse=" OR ")
-
-  query <- paste0(query,genesToQuery)
+  if(sort) {
+    query <- paste(query, "ORDER BY Gene")
+  }
 
   return(query)
 }
