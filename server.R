@@ -27,9 +27,8 @@ server <- function(input, output,session) {
       if(input$subtype != "Multiplot" && input$subtype != "Mutations") {
         shinyjs::show(id = "gene")
         shinyjs::show(id = "subtype_options")
-        query <- clinicalQuery(factors=c(input$subtype), unique=TRUE, type="Short_hand_code",subtypes=input$dataset)
+        query <- clinicalQuery(factors=c(input$subtype), type=input$subtype, dataset=input$dataset, unique=TRUE, sort=TRUE)
         subtype_choices <- unlist(dbGetQuery(database,query),use.names = FALSE)
-        subtype_choices <- str_sort(subtype_choices)
         updateCheckboxGroupInput(session,
                                  "subtype_options",
                                  label = "Subtypes",
@@ -64,7 +63,8 @@ server <- function(input, output,session) {
         query <- geneQuery(genes = input$genes, table = input$dataset)
         tcga <- dbGetQuery(database,query)
 
-        query <- clinicalQuery(factors = "*")
+        query <- clinicalQuery(factors = "*", dataset = input$dataset)
+        print(query)
         clinical <- dbGetQuery(database,query)
         clinical <- merge(tcga, clinical, by="UPN")
 
@@ -83,8 +83,9 @@ server <- function(input, output,session) {
         tcga <- dbGetQuery(database,query)
 
         query <- clinicalQuery(factors="*",
+                               type=input$subtype,
                                subtypes=input$subtype_options,
-                               type=input$subtype)
+                               dataset=input$dataset)
         clinical <- dbGetQuery(database,query)
         clinical <- merge(tcga, clinical, by="UPN")
 
