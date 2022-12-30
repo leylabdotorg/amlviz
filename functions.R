@@ -20,25 +20,35 @@ geneQuery <- function(factors=c("UPN","Gene","Expression"), table="Genes", genes
   return(query)
 }
 
-# Function is most likely useless and can be condensed with geneQuery; however, I suspect that there may be some edge cases where it's necessary
-clinicalQuery <- function(factors=c("UPN","Short_hand_code"), unique=FALSE,table="master_clinical",type=NULL, subtypes=NULL) {
-  # SELECT * FROM TMT_Clinical WHERE (UPN="ND8" OR ...);
+clinicalQuery <- function(factors=c("UPN","Short_hand_code"), table="master_clinical", type=NULL, subtypes=NULL, dataset=NULL, unique=FALSE, sort=FALSE) {
+  query <- "SELECT"
 
-  factors <- paste(factors,collapse=",")
   if(unique) {
-    query <- paste("SELECT DISTINCT", factors, "FROM", table)
-  }
-  else {
-    query <- paste("SELECT", factors, "FROM", table)
+    # TODO: Rework to make more general. Currently just using arg for options
+    # query <- paste(query, "DISTINCT")
+    return(paste0("SELECT DISTINCT ", type, " FROM ", table," WHERE Short_hand_code='",dataset,"' ORDER BY ", type))
   }
 
-  if(is.null(subtypes)) {
-    query <- paste0(query,";")
+  factors <- paste(factors, collapse=",")
+  query <- paste(query, factors, "FROM", table)
+
+  if(!is.null(type)) {
+    subtypesToQuery <- paste0(type, "='",subtypes,"'",collapse=" OR ")
+    query <- paste0(query, " WHERE (", subtypesToQuery,")")
   }
   else {
-    subtypesToQuery <- paste(type,"='",subtypes,"'",sep="",collapse=" OR ")
-    query <- paste(query," WHERE (",subtypesToQuery,");",sep="")
+    # TODO: Same as above
+    query <- return(paste0(query, " WHERE Short_hand_code='", dataset,"'"))
   }
+
+  if(!is.null(dataset)) {
+    query <- paste0(query, " AND Short_hand_code='", dataset,"'")
+  }
+
+  if(sort) {
+    query <- paste(query, "ORDER BY", type)
+  }
+
   return(query)
 }
 
