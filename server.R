@@ -10,10 +10,8 @@ server <- function(input, output,session) {
       updateSelectInput(session, "subtype",choices = available_plots[[input$dataset]], selected = character(0))
 
       # Update gene and genes
-      query <- geneQuery(factors = c("Gene"), table = input$dataset, unique = TRUE, sort = TRUE)
-      geneChoices <- dbGetQuery(database, query)
-      updateSelectizeInput(session, "genes", choices = c("",as.character(geneChoices$Gene)),selected = character(0), server = TRUE)
-      updateSelectizeInput(session, "gene", choices = c("",as.character(geneChoices$Gene)),selected = character(0), server = TRUE)
+      updateSelectizeInput(session, "genes", choices = geneList[[input$dataset]]$Gene, selected = character(0), server = TRUE)
+      updateSelectizeInput(session, "gene", choices = geneList[[input$dataset]]$Gene, selected = character(0), server = TRUE)
     }
   })
 
