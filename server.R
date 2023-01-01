@@ -7,8 +7,7 @@ server <- function(input, output,session) {
       hideAllElements() # Hide old options when new dataset is selected
 
       # Update available plots based on datasets
-      source(paste0("configs/",input$dataset,".R"), local = TRUE)
-      updateSelectInput(session, "subtype",choices = c("",as.character(available_plots)), selected = character(0))
+      updateSelectInput(session, "subtype",choices = available_plots[[input$dataset]], selected = character(0))
 
       # Update gene and genes
       query <- geneQuery(factors = c("Gene"), table = input$dataset, unique = TRUE, sort = TRUE)
