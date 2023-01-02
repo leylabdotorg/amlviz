@@ -5,8 +5,6 @@ library(plotly)
 library(ggplot2)
 library(ggbeeswarm)
 library(DBI)
-library(data.table)
-library(stringr)
 source("functions.R")
 
 
