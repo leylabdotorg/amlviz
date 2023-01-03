@@ -5,7 +5,7 @@ ui <- fluidPage(
       selectInput(
         inputId = "dataset",
         label = "Select a dataset",
-        choices = c("",as.character(dataset$Short_hand_code)),
+        choices = c("",dataset$Short_hand_code),
         selected = NULL,
         multiple = FALSE
       ),
@@ -17,7 +17,7 @@ ui <- fluidPage(
           label = "Select an option",
           choices = NULL,
           multiple = FALSE,
-          selected = character(0)
+          selected = ""
         ),
         # Dropdown to select genes
         selectizeInput(
@@ -25,7 +25,7 @@ ui <- fluidPage(
           label = "Multigene plot",
           choices = NULL,
           multiple = TRUE,
-          selected = character(0)
+          selected = ""
         ),
         # Dropdown to select gene
         selectizeInput(
@@ -33,7 +33,7 @@ ui <- fluidPage(
           label = "Gene to plot",
           choices = NULL,
           multiple = FALSE,
-          selected = character(0)
+          selected = ""
         ),
         # Checkbox to select subtype options
         checkboxGroupInput(
