@@ -12,7 +12,7 @@ ui <- fluidPage(
       # All elements are hidden at start because they will vary based on dataset
       shinyjs::hidden(
         # Dropdown to select which plot you want based on dataset
-        selectInput(
+        selectizeInput(
           inputId = "subtype",
           label = "Select an option",
           choices = NULL,
