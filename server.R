@@ -7,11 +7,11 @@ server <- function(input, output,session) {
       hideAllElements() # Hide old options when new dataset is selected
 
       # Update available plots based on datasets
-      updateSelectInput(session, "subtype",choices = available_plots[[input$dataset]], selected = character(0))
+      updateSelectInput(session = session, inputId = "subtype",choices = c('', available_plots[[input$dataset]]), selected = "")
 
       # Update gene and genes
-      updateSelectizeInput(session, "genes", choices = geneList[[input$dataset]]$Gene, selected = character(0), server = TRUE)
-      updateSelectizeInput(session, "gene", choices = geneList[[input$dataset]]$Gene, selected = character(0), server = TRUE)
+      updateSelectizeInput(session = session, inputId = "genes", choices = c("", geneList[[input$dataset]]$Gene), selected = "", server = TRUE)
+      updateSelectizeInput(session = session, inputId = "gene", choices = c("", geneList[[input$dataset]]$Gene), selected = "", server = TRUE)
     }
   })
 
@@ -51,7 +51,7 @@ server <- function(input, output,session) {
   # Handles output for plot
   output$plot <- renderPlotly({
     plotReady <- FALSE
-    if(input$dataset != "") {
+    if(length(input$genes) > 1 || input$gene != "") {
       query <- geneQuery(genes = input$genes, table = input$dataset)
       tcga <- dbGetQuery(database,query)
 
