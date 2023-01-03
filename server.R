@@ -91,28 +91,22 @@ server <- function(input, output,session) {
     else if(input$subtype == "Mutations" && input$gene != "" && input$mutation_status != "") {
       query <- geneQuery(genes = input$gene, table = input$dataset)
       tcga <- dbGetQuery(database,query)
-      tcga$Group <- "WT"
 
-      query <- paste0("SELECT DISTINCT UPN FROM master_mutation WHERE Short_hand_code='",input$dataset,"' AND Mutation='",input$mutation_status,"' AND Gene='",input$gene,"';")
-      print(query)
+      query <- paste0("SELECT DISTINCT UPN,Mutation_type FROM master_mutation WHERE Short_hand_code='",input$dataset,"' AND Mutation='",input$mutation_status,"' AND Gene='",input$gene,"';")
       upns_with_mut <- dbGetQuery(database,query)
-      #upns_with_mut <- as.character(mutation_table$UPN[which(mutation_table$Gene %in% input$mutation_status)])
 
-      query <- paste0("SELECT * FROM master_clinical WHERE Short_hand_code='",input$dataset,"';")
-      all_clinical <- dbGetQuery(database,query)
-
-      tcga$Group[tcga$UPN %in% upns_with_mut] <- input$mutation_status
+      tcga$Group <- "WT"
+      tcga$Group[tcga$UPN %in% upns_with_mut$UPN] <- input$mutation_status
 
       tcga$Mutation <- paste(input$mutation_status,"WT")
-      query <- paste0("SELECT UPN,Mutation,Mutation_type FROM master_mutation WHERE Short_hand_code ='",input$dataset, "';")
-      mutations <- dbGetQuery(database,query)
-      tcga$Mutation[tcga$UPN %in% upns_with_mut] <- mutations$Mutation_type[tcga$UPN %in% upns_with_mut]
+      for(i in upns_with_mut$UPN) {
+        tcga$Mutation[tcga$UPN == i] <- upns_with_mut$Mutation_type[upns_with_mut$UPN == i]
+      }
+
       tcga$Gene <- input$gene
-
+      query <- paste0("SELECT * FROM master_clinical WHERE Short_hand_code='",input$dataset,"';")
+      all_clinical <- dbGetQuery(database,query)
       clinical <- merge(tcga,all_clinical, by = "UPN")
-
-      # Todo Readd factors
-      print(clinical$Group)
 
       g <- ggplot(clinical,aes(Group, Expression, text = paste0("UPN ID: ",UPN,"<br />Mutation type: ", Mutation))) +
         geom_quasirandom(size = 0.8) +
