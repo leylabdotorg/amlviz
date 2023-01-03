@@ -13,10 +13,10 @@ Things needed in docker configuration file
     Ex: `gcloud auth configure-docker us-central1-docker.pkg.dev`
     5. Build the docker image by running a command with the following form: \
     `docker build . --tag repository-location-docker.pkg.dev/project-name/artifact-registry-repository/image-name:tag-name` \
-    Ex: `docker build . --tag us-central1-docker.pkg.dev/leylab/proteomics-shiny/shiny:latest`
+    Ex: `docker build . --tag us-central1-docker.pkg.dev/leylab/shiny-apps/amlviz:latest`
     6. Push the image to repository with \
     `docker push repository-location-docker.pkg.dev/project-name/artifact-registry-repository/image-name:tag-name` \
-    Ex: `docker push us-central1-docker.pkg.dev/leylab/proteomics-shiny/shiny:latest`
+    Ex: `docker push us-central1-docker.pkg.dev/leylab/shiny-apps/amlviz:latest`
 
 3. Create service in Google Cloud Platform
     1. Visit [Google Cloud Run portal](https://console.cloud.google.com/run) and click "CREATE SERVICE"
