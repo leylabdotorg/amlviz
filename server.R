@@ -10,8 +10,8 @@ server <- function(input, output,session) {
       updateSelectizeInput(session = session, inputId = "subtype",choices = c("", available_plots[[input$dataset]]), selected = "", server = TRUE)
 
       # Update gene and genes
-      updateSelectizeInput(session = session, inputId = "genes", choices = c("", geneList[[input$dataset]]$Gene), selected = "", server = TRUE)
-      updateSelectizeInput(session = session, inputId = "gene", choices = c("", geneList[[input$dataset]]$Gene), selected = "", server = TRUE)
+      updateSelectizeInput(session = session, inputId = "genes", choices = geneList[[input$dataset]]$Gene, selected = NULL, server = TRUE)
+      updateSelectizeInput(session = session, inputId = "gene", choices = geneList[[input$dataset]]$Gene, selected = NULL, server = TRUE)
     }
   })
 
@@ -19,7 +19,6 @@ server <- function(input, output,session) {
   # Toggles several ui elements based on the dataset and subtype
   observeEvent(input$subtype, {
     hideAllElements()
-
     if(input$subtype == "Multiplot") {
       shinyjs::show(id = "genes")
     }
@@ -40,7 +39,7 @@ server <- function(input, output,session) {
 
       query <- paste0("SELECT DISTINCT Mutation FROM master_mutation WHERE Short_hand_code ='",input$dataset, "';")
       mutation_choices <- dbGetQuery(database, query)
-      updateSelectizeInput(session, "mutation_status", choices = c("", mutation_choices$Mutation),selected = "", server = TRUE)
+      updateSelectizeInput(session, "mutation_status", choices = mutation_choices$Mutation, selected = NULL, server = TRUE)
     }
   })
 
@@ -66,7 +65,7 @@ server <- function(input, output,session) {
     }
 
     # Subtype
-    else if(length(input$subtype_options) > 0 && input$gene != "" && input$subtype != "Multiplot" && input$subtype != "Mutations") {
+    else if(length(input$subtype_options) > 0 && input$subtype != "" && input$gene != "" && input$subtype != "Multiplot" && input$subtype != "Mutations") {
       query <- geneQuery(genes = input$gene, table = input$dataset)
       tcga <- dbGetQuery(database,query)
 

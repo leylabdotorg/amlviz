@@ -25,7 +25,7 @@ ui <- fluidPage(
           label = "Multigene plot",
           choices = NULL,
           multiple = TRUE,
-          selected = ""
+          selected = NULL
         ),
         # Dropdown to select gene
         selectizeInput(
@@ -33,19 +33,19 @@ ui <- fluidPage(
           label = "Gene to plot",
           choices = NULL,
           multiple = FALSE,
-          selected = ""
+          selected = NULL
         ),
         # Checkbox to select subtype options
         checkboxGroupInput(
           inputId = "subtype_options",
           label = NULL,
-          choices = character(0)
+          choices = NULL
         ),
         # Dropdown specifically for Mutation
         selectizeInput(
           inputId = "mutation_status",
           label = "Mutation Status",
-          choices = character(0)
+          choices = NULL
         )
       )
       ),
