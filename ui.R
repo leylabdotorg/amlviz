@@ -45,7 +45,9 @@ ui <- fluidPage(
         selectizeInput(
           inputId = "mutation_status",
           label = "Mutation Status",
-          choices = NULL
+          choices = NULL,
+          multiple = FALSE,
+          selected = NULL
         )
       )
       ),
