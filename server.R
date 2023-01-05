@@ -37,9 +37,9 @@ server <- function(input, output,session) {
       shinyjs::show(id = "gene")
       shinyjs::show(id = "mutation_status")
 
-      query <- paste0("SELECT DISTINCT Mutation FROM master_mutation WHERE Short_hand_code ='",input$dataset, "';")
+      query <- paste0("SELECT DISTINCT Gene FROM master_mutation WHERE Short_hand_code ='",input$dataset, "';")
       mutation_choices <- dbGetQuery(database, query)
-      updateSelectizeInput(session, "mutation_status", choices = mutation_choices$Mutation, selected = NULL, server = TRUE)
+      updateSelectizeInput(session, "mutation_status", choices = mutation_choices$Gene, selected = NULL, server = TRUE)
     }
   })
 
@@ -91,15 +91,16 @@ server <- function(input, output,session) {
       query <- geneQuery(genes = input$gene, table = input$dataset)
       tcga <- dbGetQuery(database,query)
 
-      query <- paste0("SELECT DISTINCT UPN,Mutation_type FROM master_mutation WHERE Short_hand_code='",input$dataset,"' AND Mutation='",input$mutation_status,"' AND Gene='",input$gene,"';")
+      query <- paste0("SELECT DISTINCT UPN,Mutation,Mutation_type FROM master_mutation WHERE Short_hand_code='",input$dataset,"' AND Gene='",input$mutation_status,"';")
       upns_with_mut <- dbGetQuery(database,query)
 
       tcga$Group <- "WT"
-      tcga$Group[tcga$UPN %in% upns_with_mut$UPN] <- input$mutation_status
-
       tcga$Mutation <- paste(input$mutation_status,"WT")
+      tcga$Mutation_type <- NA
       for(i in upns_with_mut$UPN) {
-        tcga$Mutation[tcga$UPN == i] <- upns_with_mut$Mutation_type[upns_with_mut$UPN == i]
+        tcga$Group[tcga$UPN == i] <- input$mutation_status
+        tcga$Mutation[tcga$UPN == i] <- upns_with_mut$Mutation[upns_with_mut$UPN == i]
+        tcga$Mutation_type[tcga$UPN == i] <- upns_with_mut$Mutation_type[upns_with_mut$UPN == i]
       }
 
       tcga$Gene <- input$gene
@@ -107,7 +108,7 @@ server <- function(input, output,session) {
       all_clinical <- dbGetQuery(database,query)
       clinical <- merge(tcga,all_clinical, by = "UPN")
 
-      g <- ggplot(clinical,aes(Group, Expression, text = paste0("UPN ID: ",UPN,"<br />Mutation type: ", Mutation))) +
+      g <- ggplot(clinical,aes(Group, Expression, text = paste0("UPN ID: ",UPN,"<br />Mutation: ",Mutation,"<br />Mutation type: ",Mutation_type))) +
         geom_quasirandom(size = 0.8) +
         theme_bw() +
         ggtitle(paste0("Log2 Expression for ",input$gene," with ",input$mutation_status, ": WT|MT")) +
