@@ -108,6 +108,8 @@ server <- function(input, output,session) {
       all_clinical <- dbGetQuery(database,query)
       clinical <- merge(tcga,all_clinical, by = "UPN")
 
+      clinical$Group <- factor(clinical$Group, levels = c(paste(input$mutation_status, "WT"), paste(input$mutation_status, "MT")))
+
       g <- ggplot(clinical,aes(Group, Expression, text = paste0("UPN ID: ",UPN,"<br />Mutation: ",Mutation,"<br />Mutation type: ",Mutation_type))) +
         geom_quasirandom(size = 0.8) +
         theme_bw() +
