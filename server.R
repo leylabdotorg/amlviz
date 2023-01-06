@@ -94,11 +94,11 @@ server <- function(input, output,session) {
       query <- paste0("SELECT DISTINCT UPN,Mutation,Mutation_type FROM master_mutation WHERE Short_hand_code='",input$dataset,"' AND Gene='",input$mutation_status,"';")
       upns_with_mut <- dbGetQuery(database,query)
 
-      tcga$Group <- "WT"
+      tcga$Group <- paste(input$mutation_status, "WT")
       tcga$Mutation <- paste(input$mutation_status,"WT")
       tcga$Mutation_type <- NA
       for(i in upns_with_mut$UPN) {
-        tcga$Group[tcga$UPN == i] <- input$mutation_status
+        tcga$Group[tcga$UPN == i] <- paste(input$mutation_status, "MT")
         tcga$Mutation[tcga$UPN == i] <- upns_with_mut$Mutation[upns_with_mut$UPN == i]
         tcga$Mutation_type[tcga$UPN == i] <- upns_with_mut$Mutation_type[upns_with_mut$UPN == i]
       }
