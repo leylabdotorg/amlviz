@@ -47,7 +47,7 @@ server <- function(input, output,session) {
   output$plot <- renderPlotly({
     plotReady <- FALSE
     # Multiplot
-    if(input$subtype == "Multiplot" && length(input$genes) > 1) {
+    if(input$subtype == "Multiplot" && length(input$genes) > 0) {
       query <- geneQuery(genes = input$genes, table = input$dataset)
       tcga <- dbGetQuery(database,query)
 
