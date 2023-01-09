@@ -24,6 +24,9 @@ available_plots[["beat_aml"]] <- c("Multiplot","Fusion","Mutations")
 # Generate all gene drop downs
 geneList <- new.env(hash=TRUE)
 for(i in dataset$Short_hand_code) {
-  query <- geneQuery(factors = c("Gene"), table = i, unique = TRUE, sort = TRUE)
-  geneList[[i]] <- dbGetQuery(database,query)
+  if(!file.exists(paste0("gene_list/", i, ".txt"))) {
+    query <- geneQuery(factors = c("Gene"), table = i, unique = TRUE, sort = TRUE)
+    write.table(dbGetQuery(database,query), paste0("gene_list/", i, ".txt"),sep="\t",row.names=FALSE,col.names=FALSE)
+  }
+  geneList[[i]] <- read.delim(paste0("gene_list/", i, ".txt"), header = FALSE, sep = "\t", dec = ".")
 }

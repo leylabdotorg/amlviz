@@ -10,8 +10,8 @@ server <- function(input, output,session) {
       updateSelectizeInput(session = session, inputId = "subtype",choices = c("", available_plots[[input$dataset]]), selected = "", server = TRUE)
 
       # Update gene and genes
-      updateSelectizeInput(session = session, inputId = "genes", choices = geneList[[input$dataset]]$Gene, selected = NULL, server = TRUE)
-      updateSelectizeInput(session = session, inputId = "gene", choices = geneList[[input$dataset]]$Gene, selected = NULL, server = TRUE)
+      updateSelectizeInput(session = session, inputId = "genes", choices = geneList[[input$dataset]]$V1, selected = NULL, server = TRUE)
+      updateSelectizeInput(session = session, inputId = "gene", choices = geneList[[input$dataset]]$V1, selected = NULL, server = TRUE)
     }
   })
 
