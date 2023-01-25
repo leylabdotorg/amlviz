@@ -40,3 +40,10 @@ for(i in dbFields) {
     available_plots[[j]] <- append(available_plots[[j]], i)
   }
 }
+
+# Add Mutations option if dataset is in mutation table
+query <- "SELECT DISTINCT Short_hand_code FROM master_mutation"
+datasetMutations <- dbGetQuery(database, query)
+for(i in datasetMutations$Short_hand_code) {
+  available_plots[[i]] <- append(available_plots[[i]], "Mutations")
+}
