@@ -16,17 +16,27 @@ print("Connected to database")
 query <- paste0("SELECT * FROM master_database;")
 dataset <- dbGetQuery(database,query)
 
-# Generate all available plots
+# Generate all available plots and gene dropdowns
 available_plots <- new.env(hash=TRUE)
-available_plots[["tcga_aml"]] <- c("Multiplot","FAB", "Cyto_risk", "Fusion","Mutations")
-available_plots[["beat_aml"]] <- c("Multiplot","Fusion","Mutations")
-
-# Generate all gene drop downs
 geneList <- new.env(hash=TRUE)
+
 for(i in dataset$Short_hand_code) {
+  # Generate gene dropdown if cache doesn't exist
   if(!file.exists(paste0("gene_list/", i, ".txt"))) {
     query <- geneQuery(factors = c("Gene"), table = i, unique = TRUE, sort = TRUE)
     write.table(dbGetQuery(database,query), paste0("gene_list/", i, ".txt"),sep="\t",row.names=FALSE,col.names=FALSE)
   }
   geneList[[i]] <- read.delim(paste0("gene_list/", i, ".txt"), header = FALSE, sep = "\t", dec = ".")
+  available_plots[[i]] <- c("Multiplot")
+}
+
+# Add other factors to available plots
+dbFields <- dbListFields(database, "master_clinical")
+dbFields <- dbFields[-c(1,2,3,4)] # Removes UPN and other columns that can't be plotted
+for(i in dbFields) {
+  query <- paste("SELECT DISTINCT Short_hand_code FROM master_clinical WHERE", i, "IS NOT NULL")
+  datasetPlots <- dbGetQuery(database, query)
+  for(j in datasetPlots$Short_hand_code) {
+    available_plots[[j]] <- append(available_plots[[j]], i)
+  }
 }
