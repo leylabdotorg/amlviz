@@ -5,12 +5,18 @@ library(plotly)
 library(ggplot2)
 library(ggbeeswarm)
 library(DBI)
+library(RMySQL)
 source("functions.R")
 
 
 # database
 # loaded once per server rather than every client
-database <- dbConnect(RSQLite::SQLite(), "master_shiny_app.db")
+database <- dbConnect(MySQL(),
+                      user = Sys.getenv("DB_USER"),
+                      password = Sys.getenv("DB_PASSWORD"),
+                      dbname = Sys.getenv("DB_NAME"),
+                      host = Sys.getenv("DB_HOST"),
+                      port = as.integer(Sys.getenv("DB_PORT")))
 print("Connected to database")
 
 query <- paste0("SELECT * FROM master_database;")

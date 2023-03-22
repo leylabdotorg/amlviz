@@ -3,7 +3,8 @@ FROM rocker/shiny-verse:latest
 RUN R -e "install.packages(c(\
   'shinyjs', \
   'shinythemes', \
-  'plotly' \
+  'plotly', \
+  'RMySQL' \
   ), repos='http://cran.rstudio.com/')"
 RUN R -e "devtools::install_github('eclarke/ggbeeswarm', ref='v0.6.1')"
 
