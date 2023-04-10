@@ -38,7 +38,7 @@ for(i in dataset$Study_ID) {
 
 # Add other factors to available plots
 dbFields <- dbListFields(database, "clinical")
-dbFields <- dbFields[-c(1,2,3,4)] # Removes UPN and other columns that can't be plotted
+dbFields <- dbFields[-c(1,2,3)] # Removes UPN and other columns that can't be plotted
 for(i in dbFields) {
   query <- paste0("SELECT DISTINCT P.Study_ID FROM clinical U INNER JOIN mappings P on P.UPN = U.UPN WHERE U.", i, " IS NOT NULL")
   datasetPlots <- dbGetQuery(database, query)
