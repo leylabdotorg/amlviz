@@ -19,14 +19,14 @@ database <- dbConnect(MySQL(),
                       port = as.integer(Sys.getenv("DB_PORT")))
 print("Connected to database")
 
-query <- paste0("SELECT * FROM master_database;")
+query <- "SELECT * FROM datasets;"
 dataset <- dbGetQuery(database,query)
 
 # Generate all available plots and gene dropdowns
 available_plots <- new.env(hash=TRUE)
 geneList <- new.env(hash=TRUE)
 
-for(i in dataset$Short_hand_code) {
+for(i in dataset$Study_ID) {
   # Generate gene dropdown if cache doesn't exist
   if(!file.exists(paste0("gene_list/", i, ".txt"))) {
     query <- geneQuery(factors = c("Gene"), table = i, unique = TRUE, sort = TRUE)
@@ -37,19 +37,18 @@ for(i in dataset$Short_hand_code) {
 }
 
 # Add other factors to available plots
-dbFields <- dbListFields(database, "master_clinical")
-dbFields <- dbFields[-c(1,2,3,4)] # Removes UPN and other columns that can't be plotted
+dbFields <- dbListFields(database, "clinical")
+dbFields <- dbFields[!(dbFields %in% c("UPN","Age","Sex"))] # Removes UPN and other columns that can't be plotted
 for(i in dbFields) {
-  query <- paste("SELECT DISTINCT Short_hand_code FROM master_clinical WHERE", i, "IS NOT NULL")
+  query <- paste0("SELECT DISTINCT P.Study_ID FROM clinical U INNER JOIN mappings P on P.UPN = U.UPN WHERE U.", i, " IS NOT NULL")
   datasetPlots <- dbGetQuery(database, query)
-  for(j in datasetPlots$Short_hand_code) {
+  for(j in datasetPlots$Study_ID) {
     available_plots[[j]] <- append(available_plots[[j]], i)
   }
 }
 
 # Add Mutations option if dataset is in mutation table
-query <- "SELECT DISTINCT Short_hand_code FROM master_mutation"
-datasetMutations <- dbGetQuery(database, query)
-for(i in datasetMutations$Short_hand_code) {
+# TODO: Make dynamic again
+for(i in dataset$Study_ID) {
   available_plots[[i]] <- append(available_plots[[i]], "Mutations")
 }

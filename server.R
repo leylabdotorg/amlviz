@@ -37,7 +37,7 @@ server <- function(input, output,session) {
       shinyjs::show(id = "gene")
       shinyjs::show(id = "mutation_status")
 
-      query <- paste0("SELECT DISTINCT Gene FROM master_mutation WHERE Short_hand_code ='",input$dataset, "';")
+      query <- clinicalQuery(factors = "Gene", table = "mutation", dataset = input$dataset, type = "Gene", unique = TRUE, sort = TRUE)
       mutation_choices <- dbGetQuery(database, query)
       updateSelectizeInput(session, "mutation_status", choices = mutation_choices$Gene, selected = NULL, server = TRUE)
     }
@@ -55,7 +55,7 @@ server <- function(input, output,session) {
       clinical <- dbGetQuery(database,query)
       clinical <- merge(tcga, clinical, by="UPN")
 
-      g <- ggplot(clinical,aes(fill=Gene, y=Expression, x=UPN, text = paste0("UPN ID: ",UPN,"<br />Dataset: ", Short_hand_code))) + geom_bar(position="dodge", stat="identity") + theme_bw() +
+      g <- ggplot(clinical,aes(fill=Gene, y=Expression, x=UPN, text = paste0("UPN ID: ",UPN,"<br />Dataset: ", input$dataset))) + geom_bar(position="dodge", stat="identity") + theme_bw() +
         theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=10, family="avenir", face="bold"),
               axis.title=element_text(size=12, family="avenir", face="bold"),
               axis.text.x = element_text(angle = 90, hjust = 1)) +
@@ -77,7 +77,7 @@ server <- function(input, output,session) {
       clinical <- merge(tcga, clinical, by="UPN")
 
 
-      g <- ggplot(clinical,aes(eval(as.name(input$subtype)), Expression, text = paste0("UPN ID: ",UPN,"<br />Dataset: ", Short_hand_code))) + geom_quasirandom(size = 0.8) + theme_bw() +
+      g <- ggplot(clinical,aes(eval(as.name(input$subtype)), Expression, text = paste0("UPN ID: ",UPN,"<br />Dataset: ", input$dataset))) + geom_quasirandom(size = 0.8) + theme_bw() +
         ggtitle(paste0("Log2 Expression for ",input$gene)) +
         theme(text=element_text(size=12, family="avenir", face="bold"),
               axis.text=element_text(size=12, family="avenir", face="bold"),
@@ -91,7 +91,7 @@ server <- function(input, output,session) {
       query <- geneQuery(genes = input$gene, table = input$dataset)
       tcga <- dbGetQuery(database,query)
 
-      query <- paste0("SELECT DISTINCT UPN,Mutation,Mutation_type FROM master_mutation WHERE Short_hand_code='",input$dataset,"' AND Gene='",input$mutation_status,"';")
+      query <- clinicalQuery(factors = c("UPN", "Mutation", "Mutation_type"), table = "mutation", dataset = input$dataset, type = "Gene", subtypes = input$mutation_status, unique = TRUE)
       upns_with_mut <- dbGetQuery(database,query)
 
       tcga$Group <- paste(input$mutation_status, "WT")
@@ -104,7 +104,7 @@ server <- function(input, output,session) {
       }
 
       tcga$Gene <- input$gene
-      query <- paste0("SELECT * FROM master_clinical WHERE Short_hand_code='",input$dataset,"';")
+      query <- clinicalQuery(factors = "*", table = "clinical", dataset = input$dataset)
       all_clinical <- dbGetQuery(database,query)
       clinical <- merge(tcga,all_clinical, by = "UPN")
 

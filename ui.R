@@ -5,7 +5,7 @@ ui <- fluidPage(
       selectInput(
         inputId = "dataset",
         label = "Select a dataset",
-        choices = c("",dataset$Short_hand_code),
+        choices = c("",dataset$Study_ID),
         selected = NULL,
         multiple = FALSE
       ),
