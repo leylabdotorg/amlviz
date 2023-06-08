@@ -49,7 +49,13 @@ ui <- fluidPage(
           multiple = FALSE,
           selected = NULL
         )
-      )
+      ),
+
+      # Render median line based on user input
+      uiOutput("toggle_median_ui"),
+      # Render raw/log2 value based on user input
+      uiOutput("toggle_raw_ui")
+
       ),
     mainPanel(
       plotlyOutput("plot", height = "500px")

@@ -50,3 +50,5 @@ hideAllElements <- function() {
   shinyjs::hide(id = "subtype_options")
   shinyjs::hide(id = "mutation_status")
 }
+
+

@@ -41,6 +41,39 @@ server <- function(input, output,session) {
       mutation_choices <- dbGetQuery(database, query)
       updateSelectizeInput(session, "mutation_status", choices = mutation_choices$Gene, selected = NULL, server = TRUE)
     }
+
+    # render median-line checkbox
+    if(input$dataset != "" && input$subtype != "Multiplot"){
+      output$toggle_median_ui <- renderUI({
+        checkboxInput(inputId = "toggle_median",
+                      label = "Show Median Line",
+                      value = FALSE)
+      })
+    }
+    # render raw-value checkbox
+    if(input$dataset != "" && input$subtype != ""){
+      output$toggle_raw_ui <- renderUI({
+        checkboxInput(inputId = "toggle_raw",
+                      label = "Display as 2^y",
+                      value = FALSE)
+      })
+    }
+  })
+
+  # Reactive value to store the state of the median line
+  show.median <- reactiveVal(TRUE)
+  # Handle button clicks
+  observeEvent(input$toggle_median, {
+    # Toggle the value of show.median
+    show.median(!show.median())
+  })
+
+  # Reactive value to store the state of the raw value
+  show.raw <- reactiveVal(TRUE)
+  # Handle button clicks
+  observeEvent(input$toggle_raw, {
+    # Toggle the value of show.raw
+    show.raw(!show.raw())
   })
 
   # Handles output for plot
@@ -50,17 +83,37 @@ server <- function(input, output,session) {
     if(input$subtype == "Multiplot" && length(input$genes) > 0) {
       query <- geneQuery(genes = input$genes, table = input$dataset)
       tcga <- dbGetQuery(database,query)
-
       query <- clinicalQuery(factors = "*", dataset = input$dataset)
       clinical <- dbGetQuery(database,query)
       clinical <- merge(tcga, clinical, by="UPN")
 
-      g <- ggplot(clinical,aes(fill=Gene, y=Expression, x=UPN, text = paste0("UPN ID: ",UPN,"<br />Dataset: ", input$dataset))) + geom_bar(position="dodge", stat="identity") + theme_bw() +
-        theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=10, family="avenir", face="bold"),
-              axis.title=element_text(size=12, family="avenir", face="bold"),
-              axis.text.x = element_text(angle = 90, hjust = 1)) +
-        ggtitle("Multiple gene view") +
-        ylab("Log2 Expression") + xlab("")
+      # Render log2/raw graph based on user input
+      if (show.raw()){
+        g <- ggplot(clinical,aes(fill=Gene,
+                                 y=2^Expression,
+                                 x=UPN,
+                                 text = paste0("UPN ID: ",UPN,"<br />Dataset: ", input$dataset))) +
+          geom_bar(position="dodge", stat="identity") + theme_bw() +
+          theme(text=element_text(size=12, family="avenir", face="bold"),
+                axis.text=element_text(size=10, family="avenir", face="bold"),
+                axis.title=element_text(size=12, family="avenir", face="bold"),
+                axis.text.x = element_text(angle = 90, hjust = 1)) +
+          ggtitle("Multiple gene view") +
+          ylab("Raw Expression") + xlab("")
+      } else {
+        g <- ggplot(clinical,aes(fill=Gene,
+                                 y=Expression,
+                                 x=UPN,
+                                 text = paste0("UPN ID: ",UPN,"<br />Dataset: ", input$dataset))) +
+          geom_bar(position="dodge", stat="identity") + theme_bw() +
+          theme(text=element_text(size=12, family="avenir", face="bold"),
+                axis.text=element_text(size=10, family="avenir", face="bold"),
+                axis.title=element_text(size=12, family="avenir", face="bold"),
+                axis.text.x = element_text(angle = 90, hjust = 1)) +
+          ggtitle("Multiple gene view") +
+          ylab("Log2 Expression") + xlab("")
+      }
+
       plotReady <- TRUE
     }
 
@@ -75,14 +128,33 @@ server <- function(input, output,session) {
                              dataset=input$dataset)
       clinical <- dbGetQuery(database,query)
       clinical <- merge(tcga, clinical, by="UPN")
+      # Render log2/raw graph based on user input
+      if (show.raw()){
+        g <- ggplot(clinical,
+                    aes(eval(as.name(input$subtype)),
+                        2^Expression,
+                        text = paste0("UPN ID: ",UPN,"<br />Dataset: ", input$dataset))) +
+          geom_quasirandom(size = 0.8) + theme_bw() +
+          ggtitle(paste0("Raw Expression for ",input$gene)) +
+          theme(text=element_text(size=12, family="avenir", face="bold"),
+                axis.text=element_text(size=12, family="avenir", face="bold"),
+                axis.text.x = element_text(angle = 45, hjust = 1)) +
+          ylab("Raw Expression") + xlab("")
+        plotReady <- TRUE
+      } else {
+        g <- ggplot(clinical,
+                    aes(eval(as.name(input$subtype)),
+                        Expression,
+                        text = paste0("UPN ID: ",UPN,"<br />Dataset: ", input$dataset))) +
+          geom_quasirandom(size = 0.8) + theme_bw() +
+          ggtitle(paste0("Log2 Expression for ",input$gene)) +
+          theme(text=element_text(size=12, family="avenir", face="bold"),
+                axis.text=element_text(size=12, family="avenir", face="bold"),
+                axis.text.x = element_text(angle = 45, hjust = 1)) +
+          ylab("Log2 Expression") + xlab("")
+        plotReady <- TRUE
+      }
 
-
-      g <- ggplot(clinical,aes(eval(as.name(input$subtype)), Expression, text = paste0("UPN ID: ",UPN,"<br />Dataset: ", input$dataset))) + geom_quasirandom(size = 0.8) + theme_bw() +
-        ggtitle(paste0("Log2 Expression for ",input$gene)) +
-        theme(text=element_text(size=12, family="avenir", face="bold"),
-              axis.text=element_text(size=12, family="avenir", face="bold"),
-              axis.text.x = element_text(angle = 45, hjust = 1)) +
-        ylab("Log2 Expression") + xlab("")
       plotReady <- TRUE
     }
 
@@ -110,17 +182,42 @@ server <- function(input, output,session) {
 
       clinical$Group <- factor(clinical$Group, levels = c(paste(input$mutation_status, "WT"), paste(input$mutation_status, "MT")))
 
-      g <- ggplot(clinical,aes(Group, Expression, text = paste0("UPN ID: ",UPN,"<br />Mutation: ",Mutation,"<br />Mutation type: ",Mutation_type))) +
-        geom_quasirandom(size = 0.8) +
-        theme_bw() +
-        ggtitle(paste0("Log2 Expression for ",input$gene," with ",input$mutation_status, ": WT|MT")) +
-        theme(text=element_text(size=12, family="avenir", face="bold"), axis.text=element_text(size=12, family="avenir", face="bold"),axis.text.x = element_text(angle = 45, hjust = 1)) +
-        ylab("Log2 Expression") + xlab("")
+      # Render log2/raw graph based on user input
+      if (show.raw()){
+        g <- ggplot(clinical,
+                    aes(Group,
+                        2^Expression,
+                        text = paste0("UPN ID: ",UPN,"<br />Mutation: ",Mutation,"<br />Mutation type: ",Mutation_type))) +
+          geom_quasirandom(size = 0.8) +
+          theme_bw() +
+          ggtitle(paste0("Raw Expression for ",input$gene," with ",input$mutation_status, ": WT|MT")) +
+          theme(text=element_text(size=12, family="avenir", face="bold"),
+                axis.text=element_text(size=12, family="avenir", face="bold"),
+                axis.text.x = element_text(angle = 45, hjust = 1)) +
+          ylab("Raw Expression") + xlab("")
+      } else {
+        g <- ggplot(clinical,
+                    aes(Group,
+                        Expression,
+                        text = paste0("UPN ID: ",UPN,"<br />Mutation: ",Mutation,"<br />Mutation type: ",Mutation_type))) +
+          geom_quasirandom(size = 0.8) +
+          theme_bw() +
+          ggtitle(paste0("Log2 Expression for ",input$gene," with ",input$mutation_status, ": WT|MT")) +
+          theme(text=element_text(size=12, family="avenir", face="bold"),
+                axis.text=element_text(size=12, family="avenir", face="bold"),
+                axis.text.x = element_text(angle = 45, hjust = 1)) +
+          ylab("Log2 Expression") + xlab("")
+      }
+
       plotReady <- TRUE
     }
 
     # Plotting
     if(plotReady) {
+      # check if we need to add median line
+      if(show.median()) {
+        g <- g + stat_summary(fun="median", geom="errorbar", color="red", aes(group=1))
+      }
       ggplotly(g, tooltip="text")
     }
   })
