@@ -9,6 +9,7 @@ ui <- fluidPage(
         selected = NULL,
         multiple = FALSE
       ),
+
       # All elements are hidden at start because they will vary based on dataset
       shinyjs::hidden(
         # Dropdown to select which plot you want based on dataset
@@ -51,12 +52,12 @@ ui <- fluidPage(
         )
       ),
 
-      # Render median line based on user input
-      uiOutput("toggle_median_ui"),
-      # Render raw/log2 value based on user input
-      uiOutput("toggle_raw_ui")
+        # Render options UI for user
+        uiOutput("toggle_options"),
 
-      ),
+    ),
+
+
     mainPanel(
       plotlyOutput("plot", height = "500px")
     )
