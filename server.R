@@ -1,4 +1,4 @@
-server <- function(input, output,session) {
+server <- function(input, output, session) {
   # Handle event when user selects dataset
   # Changes gene list and available types of plots based on the dataset
   observeEvent(input$dataset, {
@@ -42,21 +42,19 @@ server <- function(input, output,session) {
       updateSelectizeInput(session, "mutation_status", choices = mutation_choices$Gene, selected = NULL, server = TRUE)
     }
 
-    # render median-line checkbox
-    if(input$dataset != "" && input$subtype != "Multiplot"){
-      output$toggle_median_ui <- renderUI({
-        checkboxInput(inputId = "toggle_median",
-                      label = "Show Median Line",
-                      value = FALSE)
-      })
-    }
-    # render raw-value checkbox
+    # render median-line checkbox + raw-value checkbox
     if(input$dataset != "" && input$subtype != ""){
-      output$toggle_raw_ui <- renderUI({
-        checkboxInput(inputId = "toggle_raw",
-                      label = "Display as 2^y",
-                      value = FALSE)
-      })
+        output$toggle_options <- renderUI({
+          tagList(
+            tags$h4("Plotting options:"),
+            checkboxInput(inputId = "toggle_median",
+                          label = "Show Median Line",
+                          value = FALSE),
+            checkboxInput(inputId = "toggle_raw",
+                          label = "Display as 2^y",
+                          value = FALSE)
+          )
+        })
     }
   })
 
