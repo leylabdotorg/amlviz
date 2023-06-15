@@ -99,7 +99,7 @@ server <- function(input, output, session) {
         y_label <- "Log2 Expression"
       } else {
         y_aes <- aes(y = 2^Expression)
-        y_label <- "Raw Expression"
+        y_label <- "Expression"
       }
       # Define the common parts of the plot
       g <- ggplot(clinical, aes(fill=Gene, x=UPN,
@@ -138,8 +138,8 @@ server <- function(input, output, session) {
         plot_title <- paste0("Log2 Expression for ", input$gene)
       } else {
         y_aes <- aes(y = 2^Expression)
-        y_label <- "Raw Expression"
-        plot_title <- paste0("Raw Expression for ", input$gene)
+        y_label <- "Expression"
+        plot_title <- paste0("Expression for ", input$gene)
       }
 
       # Define the common parts of the plot
@@ -189,8 +189,8 @@ server <- function(input, output, session) {
         plot_title <- paste0("Log2 Expression for ", input$gene, " with ", input$mutation_status, ": WT|MT")
       } else {
         y_aes <- aes(y = 2^Expression)
-        y_label <- "Raw Expression"
-        plot_title <- paste0("Raw Expression for ", input$gene, " with ", input$mutation_status, ": WT|MT")
+        y_label <- "Expression"
+        plot_title <- paste0("Expression for ", input$gene, " with ", input$mutation_status, ": WT|MT")
       }
 
       # Define the common parts of the plot
