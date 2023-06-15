@@ -9,6 +9,7 @@ ui <- fluidPage(
         selected = NULL,
         multiple = FALSE
       ),
+
       # All elements are hidden at start because they will vary based on dataset
       shinyjs::hidden(
         # Dropdown to select which plot you want based on dataset
@@ -49,8 +50,14 @@ ui <- fluidPage(
           multiple = FALSE,
           selected = NULL
         )
-      )
       ),
+
+        # Render options UI for user
+        uiOutput("toggle_options"),
+
+    ),
+
+
     mainPanel(
       plotlyOutput("plot", height = "500px")
     )
