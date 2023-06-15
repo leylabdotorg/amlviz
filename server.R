@@ -43,18 +43,27 @@ server <- function(input, output, session) {
     }
 
     # render median-line checkbox + raw-value checkbox
-    if(input$dataset != "" && input$subtype != ""){
-        output$toggle_options <- renderUI({
-          tagList(
-            tags$h4("Plotting options:"),
-            checkboxInput(inputId = "toggle_median",
-                          label = "Show Median Line",
-                          value = FALSE),
-            checkboxInput(inputId = "toggle_raw",
-                          label = "Display as 2^y",
-                          value = FALSE)
-          )
-        })
+    if (input$dataset != "" && input$subtype != "Multiplot" && input$subtype != "") {
+      output$toggle_options <- renderUI({
+        tagList(
+          tags$h4("Plotting options:"),
+          checkboxInput(inputId = "toggle_median",
+                        label = "Show Median Line",
+                        value = TRUE),
+          checkboxInput(inputId = "toggle_log",
+                        label = "Log2 scale y-axis",
+                        value = TRUE)
+        )
+      })
+    } else if (input$subtype == "Multiplot") {
+      output$toggle_options <- renderUI({
+        tagList(
+          tags$h4("Plotting options:"),
+          checkboxInput(inputId = "toggle_log",
+                        label = "Log2 scale y-axis",
+                        value = TRUE)
+        )
+      })
     }
   })
 
@@ -63,15 +72,14 @@ server <- function(input, output, session) {
   # Handle button clicks
   observeEvent(input$toggle_median, {
     # Toggle the value of show.median
-    show.median(!show.median())
+    show.median(input$toggle_median)
   })
-
   # Reactive value to store the state of the raw value
-  show.raw <- reactiveVal(TRUE)
+  show.log2 <- reactiveVal(TRUE)
   # Handle button clicks
-  observeEvent(input$toggle_raw, {
-    # Toggle the value of show.raw
-    show.raw(!show.raw())
+  observeEvent(input$toggle_log, {
+    # Toggle the value of show.log2
+    show.log2(input$toggle_log)
   })
 
   # Handles output for plot
@@ -85,33 +93,29 @@ server <- function(input, output, session) {
       clinical <- dbGetQuery(database,query)
       clinical <- merge(tcga, clinical, by="UPN")
 
-      # Render log2/raw graph based on user input
-      if (show.raw()){
-        g <- ggplot(clinical,aes(fill=Gene,
-                                 y=2^Expression,
-                                 x=UPN,
-                                 text = paste0("UPN ID: ",UPN,"<br />Dataset: ", input$dataset))) +
-          geom_bar(position="dodge", stat="identity") + theme_bw() +
-          theme(text=element_text(size=12, family="avenir", face="bold"),
-                axis.text=element_text(size=10, family="avenir", face="bold"),
-                axis.title=element_text(size=12, family="avenir", face="bold"),
-                axis.text.x = element_text(angle = 90, hjust = 1)) +
-          ggtitle("Multiple gene view") +
-          ylab("Raw Expression") + xlab("")
+      # Conditionally define the 'y' aesthetic and y-axis label
+      if (show.log2()) {
+        y_aes <- aes(y = Expression)
+        y_label <- "Log2 Expression"
       } else {
-        g <- ggplot(clinical,aes(fill=Gene,
-                                 y=Expression,
-                                 x=UPN,
-                                 text = paste0("UPN ID: ",UPN,"<br />Dataset: ", input$dataset))) +
-          geom_bar(position="dodge", stat="identity") + theme_bw() +
-          theme(text=element_text(size=12, family="avenir", face="bold"),
-                axis.text=element_text(size=10, family="avenir", face="bold"),
-                axis.title=element_text(size=12, family="avenir", face="bold"),
-                axis.text.x = element_text(angle = 90, hjust = 1)) +
-          ggtitle("Multiple gene view") +
-          ylab("Log2 Expression") + xlab("")
+        y_aes <- aes(y = 2^Expression)
+        y_label <- "Raw Expression"
       }
+      # Define the common parts of the plot
+      g <- ggplot(clinical, aes(fill=Gene, x=UPN,
+                                text=paste0("UPN ID: ", UPN, "<br />Dataset: ", input$dataset))) +
+        y_aes +
+        geom_bar(position="dodge", stat="identity") + theme_bw() +
+        theme(
+          text = element_text(size=12, family="avenir", face="bold"),
+          axis.text = element_text(size=10, family="avenir", face="bold"),
+          axis.title = element_text(size=12, family="avenir", face="bold"),
+          axis.text.x = element_text(angle = 90, hjust = 1)
+        ) +
+        ggtitle("Multiple gene view") +
+        ylab(y_label) + xlab("")
 
+      # Set the plot ready flag
       plotReady <- TRUE
     }
 
@@ -126,33 +130,31 @@ server <- function(input, output, session) {
                              dataset=input$dataset)
       clinical <- dbGetQuery(database,query)
       clinical <- merge(tcga, clinical, by="UPN")
-      # Render log2/raw graph based on user input
-      if (show.raw()){
-        g <- ggplot(clinical,
-                    aes(eval(as.name(input$subtype)),
-                        2^Expression,
-                        text = paste0("UPN ID: ",UPN,"<br />Dataset: ", input$dataset))) +
-          geom_quasirandom(size = 0.8) + theme_bw() +
-          ggtitle(paste0("Raw Expression for ",input$gene)) +
-          theme(text=element_text(size=12, family="avenir", face="bold"),
-                axis.text=element_text(size=12, family="avenir", face="bold"),
-                axis.text.x = element_text(angle = 45, hjust = 1)) +
-          ylab("Raw Expression") + xlab("")
-        plotReady <- TRUE
+
+      # Conditionally define the 'y' aesthetic and y-axis label
+      if (show.log2()) {
+        y_aes <- aes(y = Expression)
+        y_label <- "Log2 Expression"
+        plot_title <- paste0("Log2 Expression for ", input$gene)
       } else {
-        g <- ggplot(clinical,
-                    aes(eval(as.name(input$subtype)),
-                        Expression,
-                        text = paste0("UPN ID: ",UPN,"<br />Dataset: ", input$dataset))) +
-          geom_quasirandom(size = 0.8) + theme_bw() +
-          ggtitle(paste0("Log2 Expression for ",input$gene)) +
-          theme(text=element_text(size=12, family="avenir", face="bold"),
-                axis.text=element_text(size=12, family="avenir", face="bold"),
-                axis.text.x = element_text(angle = 45, hjust = 1)) +
-          ylab("Log2 Expression") + xlab("")
-        plotReady <- TRUE
+        y_aes <- aes(y = 2^Expression)
+        y_label <- "Raw Expression"
+        plot_title <- paste0("Raw Expression for ", input$gene)
       }
 
+      # Define the common parts of the plot
+      g <- ggplot(clinical, aes(eval(as.name(input$subtype)), text=paste0("UPN ID: ", UPN, "<br />Dataset: ", input$dataset))) +
+        y_aes +
+        geom_quasirandom(size=0.8) + theme_bw() +
+        ggtitle(plot_title) +
+        theme(
+          text = element_text(size=12, family="avenir", face="bold"),
+          axis.text = element_text(size=12, family="avenir", face="bold"),
+          axis.text.x = element_text(angle=45, hjust=1)
+        ) +
+        ylab(y_label) + xlab("")
+
+      # Set the plot ready flag
       plotReady <- TRUE
     }
 
@@ -180,33 +182,30 @@ server <- function(input, output, session) {
 
       clinical$Group <- factor(clinical$Group, levels = c(paste(input$mutation_status, "WT"), paste(input$mutation_status, "MT")))
 
-      # Render log2/raw graph based on user input
-      if (show.raw()){
-        g <- ggplot(clinical,
-                    aes(Group,
-                        2^Expression,
-                        text = paste0("UPN ID: ",UPN,"<br />Mutation: ",Mutation,"<br />Mutation type: ",Mutation_type))) +
-          geom_quasirandom(size = 0.8) +
-          theme_bw() +
-          ggtitle(paste0("Raw Expression for ",input$gene," with ",input$mutation_status, ": WT|MT")) +
-          theme(text=element_text(size=12, family="avenir", face="bold"),
-                axis.text=element_text(size=12, family="avenir", face="bold"),
-                axis.text.x = element_text(angle = 45, hjust = 1)) +
-          ylab("Raw Expression") + xlab("")
+      # Conditionally define the 'y' aesthetic and y-axis label
+      if (show.log2()) {
+        y_aes <- aes(y = Expression)
+        y_label <- "Log2 Expression"
+        plot_title <- paste0("Log2 Expression for ", input$gene, " with ", input$mutation_status, ": WT|MT")
       } else {
-        g <- ggplot(clinical,
-                    aes(Group,
-                        Expression,
-                        text = paste0("UPN ID: ",UPN,"<br />Mutation: ",Mutation,"<br />Mutation type: ",Mutation_type))) +
-          geom_quasirandom(size = 0.8) +
-          theme_bw() +
-          ggtitle(paste0("Log2 Expression for ",input$gene," with ",input$mutation_status, ": WT|MT")) +
-          theme(text=element_text(size=12, family="avenir", face="bold"),
-                axis.text=element_text(size=12, family="avenir", face="bold"),
-                axis.text.x = element_text(angle = 45, hjust = 1)) +
-          ylab("Log2 Expression") + xlab("")
+        y_aes <- aes(y = 2^Expression)
+        y_label <- "Raw Expression"
+        plot_title <- paste0("Raw Expression for ", input$gene, " with ", input$mutation_status, ": WT|MT")
       }
 
+      # Define the common parts of the plot
+      g <- ggplot(clinical, aes(Group, text = paste0("UPN ID: ", UPN, "<br />Mutation: ", Mutation, "<br />Mutation type: ", Mutation_type))) +
+        y_aes +
+        geom_quasirandom(size = 0.8) +
+        theme_bw() +
+        ggtitle(plot_title) +
+        theme(
+          text = element_text(size=12, family="avenir", face="bold"),
+          axis.text = element_text(size=12, family="avenir", face="bold"),
+          axis.text.x = element_text(angle=45, hjust=1)
+        ) +
+        ylab(y_label) + xlab("")
+      # Set the plot ready flag
       plotReady <- TRUE
     }
 
