@@ -43,44 +43,49 @@ server <- function(input, output, session) {
     }
 
     # render median-line checkbox + raw-value checkbox
-    if (input$dataset != "" && input$subtype != "Multiplot" && input$subtype != "") {
+    if (input$subtype == "Multiplot") {
       output$toggle_options <- renderUI({
         tagList(
-          tags$h4("Plotting options:"),
+          tags$b("Plotting options:"),
+          checkboxInput(inputId = "toggle_log",
+                        label = "Log2 scale y-axis",
+                        value = TRUE)
+        )
+      })
+    } else if (input$dataset != "" && input$subtype != "Multiplot" && input$subtype != "") {
+      output$toggle_options <- renderUI({
+        tagList(
+          tags$b("Plotting options:"),
           checkboxInput(inputId = "toggle_median",
                         label = "Show Median Line",
                         value = TRUE),
           checkboxInput(inputId = "toggle_log",
                         label = "Log2 scale y-axis",
-                        value = TRUE)
-        )
-      })
-    } else if (input$subtype == "Multiplot") {
-      output$toggle_options <- renderUI({
-        tagList(
-          tags$h4("Plotting options:"),
-          checkboxInput(inputId = "toggle_log",
-                        label = "Log2 scale y-axis",
-                        value = TRUE)
+                        value = TRUE),
+          checkboxInput(inputId = "toggle_boxplot",
+                        label = "Toggle boxplot",
+                        value = FALSE)
         )
       })
     }
   })
 
-  # Reactive value to store the state of the median line
+  # Toggle interactive median line
   show.median <- reactiveVal(TRUE)
-  # Handle button clicks
   observeEvent(input$toggle_median, {
-    # Toggle the value of show.median
     show.median(input$toggle_median)
   })
-  # Reactive value to store the state of the raw value
+  # Toggle interactive log2
   show.log2 <- reactiveVal(TRUE)
-  # Handle button clicks
   observeEvent(input$toggle_log, {
-    # Toggle the value of show.log2
     show.log2(input$toggle_log)
   })
+  # Toggle interactive boxplot
+  show.boxplot <- reactiveVal(FALSE)
+  observeEvent(input$toggle_boxplot, {
+    show.boxplot(input$toggle_boxplot)
+  })
+
 
   # Handles output for plot
   output$plot <- renderPlotly({
@@ -197,6 +202,7 @@ server <- function(input, output, session) {
       g <- ggplot(clinical, aes(Group, text = paste0("UPN ID: ", UPN, "<br />Mutation: ", Mutation, "<br />Mutation type: ", Mutation_type))) +
         y_aes +
         geom_quasirandom(size = 0.8) +
+        geom_violin(trim = FALSE, scale = "width") +
         theme_bw() +
         ggtitle(plot_title) +
         theme(
@@ -214,6 +220,9 @@ server <- function(input, output, session) {
       # check if we need to add median line
       if(show.median()) {
         g <- g + stat_summary(fun="median", geom="errorbar", color="red", aes(group=1))
+      }
+      if (show.boxplot()){
+        g <- g + geom_boxplot()
       }
       ggplotly(g, tooltip="text")
     }
