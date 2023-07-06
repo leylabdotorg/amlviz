@@ -168,7 +168,12 @@ server <- function(input, output, session) {
       query <- geneQuery(genes = input$gene, table = input$dataset)
       tcga <- dbGetQuery(database,query)
 
-      query <- clinicalQuery(factors = c("UPN", "Mutation", "Mutation_type"), table = "mutation", dataset = input$dataset, type = "Gene", subtypes = input$mutation_status, unique = TRUE)
+      query <- clinicalQuery(factors = c("UPN", "Mutation", "Mutation_type"),
+                             table = "mutation",
+                             dataset = input$dataset,
+                             type = "Gene",
+                             subtypes = input$mutation_status,
+                             unique = TRUE)
       upns_with_mut <- dbGetQuery(database,query)
 
       tcga$Group <- paste(input$mutation_status, "WT")
@@ -185,8 +190,10 @@ server <- function(input, output, session) {
       all_clinical <- dbGetQuery(database,query)
       clinical <- merge(tcga,all_clinical, by = "UPN")
 
-      clinical$Group <- factor(clinical$Group, levels = c(paste(input$mutation_status, "WT"), paste(input$mutation_status, "MT")))
-
+      clinical$Group <- factor(clinical$Group,
+                               levels = c(paste(input$mutation_status, "WT"),
+                                          paste(input$mutation_status, "MT")))
+      print(head(clinical))
       # Conditionally define the 'y' aesthetic and y-axis label
       if (show.log2()) {
         y_aes <- aes(y = Expression)
@@ -202,7 +209,7 @@ server <- function(input, output, session) {
       g <- ggplot(clinical, aes(Group, text = paste0("UPN ID: ", UPN, "<br />Mutation: ", Mutation, "<br />Mutation type: ", Mutation_type))) +
         y_aes +
         geom_quasirandom(size = 0.8) +
-        geom_violin(trim = FALSE, scale = "width") +
+        # geom_violin() +
         theme_bw() +
         ggtitle(plot_title) +
         theme(
@@ -224,6 +231,7 @@ server <- function(input, output, session) {
       if (show.boxplot()){
         g <- g + geom_boxplot()
       }
+      View(clinical)
       ggplotly(g, tooltip="text")
     }
   })
