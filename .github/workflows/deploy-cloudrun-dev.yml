@@ -106,6 +106,7 @@ jobs:
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
             DB_PORT=${{ secrets.DB_PORT }}
             DB_NAME=${{ secrets.DB_NAME }}
+          timeout: 10m
 
       # If required, use the Cloud Run url output in later steps
       - name: Show Output
