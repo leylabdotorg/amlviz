@@ -19,54 +19,55 @@ server <- function(input, output, session) {
   # Toggles several ui elements based on the dataset and subtype
   observeEvent(input$subtype, {
     hideAllElements()
-    if(input$subtype == "Multiplot") {
-      shinyjs::show(id = "genes")
-    }
-    else if(input$subtype != "Multiplot" && input$subtype != "Mutations" && input$subtype != "") {
-      shinyjs::show(id = "gene")
-      shinyjs::show(id = "subtype_options")
-      query <- clinicalQuery(factors=c(input$subtype), type=input$subtype, dataset=input$dataset, unique=TRUE, sort=TRUE)
-      subtype_choices <- unlist(dbGetQuery(database,query),use.names = FALSE)
-      updateCheckboxGroupInput(session,
-                               "subtype_options",
-                               label = "Subtypes",
-                               choices = subtype_choices,
-                               selected = subtype_choices)
-    }
-    else if(input$subtype == "Mutations") {
-      shinyjs::show(id = "gene")
-      shinyjs::show(id = "mutation_status")
+    if (input$dataset != ""){
+      if(input$subtype == "Multiplot") {
+        shinyjs::show(id = "genes")
+        # Render ui option
+        output$toggle_options <- renderUI({
+          tagList(
+            tags$b("Plotting options:"),
+            checkboxInput(inputId = "toggle_log",
+                          label = "Log2 scale y-axis",
+                          value = TRUE)
+          )
+        })
+      }
+      else {
+        if(input$subtype == "Mutations") {
+          shinyjs::show(id = "gene")
+          shinyjs::show(id = "mutation_status")
 
-      query <- clinicalQuery(factors = "Gene", table = "mutation", dataset = input$dataset, type = "Gene", unique = TRUE, sort = TRUE)
-      mutation_choices <- dbGetQuery(database, query)
-      updateSelectizeInput(session, "mutation_status", choices = mutation_choices$Gene, selected = NULL, server = TRUE)
-    }
-
-    # render median-line checkbox + raw-value checkbox
-    if (input$subtype == "Multiplot") {
-      output$toggle_options <- renderUI({
-        tagList(
-          tags$b("Plotting options:"),
-          checkboxInput(inputId = "toggle_log",
-                        label = "Log2 scale y-axis",
-                        value = TRUE)
-        )
-      })
-    } else if (input$dataset != "" && input$subtype != "Multiplot" && input$subtype != "") {
-      output$toggle_options <- renderUI({
-        tagList(
-          tags$b("Plotting options:"),
-          checkboxInput(inputId = "toggle_median",
-                        label = "Show Median Line",
-                        value = TRUE),
-          checkboxInput(inputId = "toggle_log",
-                        label = "Log2 scale y-axis",
-                        value = TRUE),
-          checkboxInput(inputId = "toggle_boxplot",
-                        label = "Toggle boxplot",
-                        value = FALSE)
-        )
-      })
+          query <- clinicalQuery(factors = "Gene", table = "mutation", dataset = input$dataset, type = "Gene", unique = TRUE, sort = TRUE)
+          mutation_choices <- dbGetQuery(database, query)
+          updateSelectizeInput(session, "mutation_status", choices = mutation_choices$Gene, selected = NULL, server = TRUE)
+        }
+        else if(input$subtype != "Mutations" && input$subtype != "") {
+          shinyjs::show(id = "gene")
+          shinyjs::show(id = "subtype_options")
+          query <- clinicalQuery(factors=c(input$subtype), type=input$subtype, dataset=input$dataset, unique=TRUE, sort=TRUE)
+          subtype_choices <- unlist(dbGetQuery(database,query),use.names = FALSE)
+          updateCheckboxGroupInput(session,
+                                   "subtype_options",
+                                   label = "Subtypes",
+                                   choices = subtype_choices,
+                                   selected = subtype_choices)
+        }
+        # render median-line checkbox + raw-value checkbox
+        output$toggle_options <- renderUI({
+          tagList(
+            tags$b("Plotting options:"),
+            checkboxInput(inputId = "toggle_median",
+                          label = "Show Median Line",
+                          value = TRUE),
+            checkboxInput(inputId = "toggle_log",
+                          label = "Log2 scale y-axis",
+                          value = TRUE),
+            checkboxInput(inputId = "toggle_boxplot",
+                          label = "Toggle boxplot",
+                          value = FALSE)
+          )
+        })
+      }
     }
   })
 
@@ -193,7 +194,7 @@ server <- function(input, output, session) {
       clinical$Group <- factor(clinical$Group,
                                levels = c(paste(input$mutation_status, "WT"),
                                           paste(input$mutation_status, "MT")))
-      print(head(clinical))
+      # print(head(clinical))
       # Conditionally define the 'y' aesthetic and y-axis label
       if (show.log2()) {
         y_aes <- aes(y = Expression)
