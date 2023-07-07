@@ -94,28 +94,27 @@ server <- function(input, output, session) {
     # default value
     clinical <- NULL
 
-    if (input$subtype != "Mutations"){
-      # Query for tcga data
-      if (input$subtype == "Multiplot") {
-        query <- geneQuery(genes = input$genes, table = input$dataset)
-        tcga <- dbGetQuery(database,query)
-        query <- clinicalQuery(factors = "*", dataset = input$dataset)
-      }
-      else if (input$subtype != "Multiplot" && input$subtype != "Mutations") {
-        query <- geneQuery(genes = input$gene, table = input$dataset)
-        tcga <- dbGetQuery(database,query)
-        query <- clinicalQuery(factors= "*",
-                               type=input$subtype,
-                               subtypes=input$subtype_options,
-                               dataset=input$dataset)
-      }
-
-      # Query clinical data and merged it to get final clinical file
+    if (input$subtype == "Multiplot") {
+      query <- geneQuery(genes = input$genes,
+                         table = input$dataset)
+      tcga <- dbGetQuery(database,query)
+      query <- clinicalQuery(factors = "*",
+                             dataset = input$dataset)
+      clinical <- dbGetQuery(database,query)
+      clinical <- merge(tcga, clinical, by="UPN")
+    }
+    else if (input$subtype != "Multiplot" && input$subtype != "Mutations") {
+      query <- geneQuery(genes = input$gene,
+                         table = input$dataset)
+      tcga <- dbGetQuery(database,query)
+      query <- clinicalQuery(factors= "*",
+                             type=input$subtype,
+                             subtypes=input$subtype_options,
+                             dataset=input$dataset)
       clinical <- dbGetQuery(database,query)
       clinical <- merge(tcga, clinical, by="UPN")
     }
     else if (input$subtype == "Mutations") {
-      # Query for tcga data
       query <- geneQuery(genes = input$gene, table = input$dataset)
       tcga <- dbGetQuery(database,query)
 
@@ -132,11 +131,9 @@ server <- function(input, output, session) {
       }
       tcga$Gene <- input$gene
 
-      # Merge into final clinical file
       query <- clinicalQuery(factors = "*", table = "clinical", dataset = input$dataset)
       all_clinical <- dbGetQuery(database,query)
       clinical <- merge(tcga, all_clinical, by = "UPN")
-
       clinical$Group <- factor(clinical$Group, levels = c(paste(input$mutation_status, "WT"), paste(input$mutation_status, "MT")))
     }
 
@@ -155,27 +152,18 @@ server <- function(input, output, session) {
       if (show.log2()) {
         y_aes <- aes(y = Expression)
         y_label <- "Log2 Expression"
-        plot_title <- paste0("Log2 Expression for Multiple gene view", input$gene)
+        plot_title <- paste0("Log2 Expression for Multiple gene view")
       } else {
         y_aes <- aes(y = 2^Expression)
         y_label <- "Expression"
-        plot_title <- paste0("Expression for Multiple gene view", input$gene)
+        plot_title <- paste0("Expression for Multiple gene view")
 
       }
       # Define the common parts of the plot
       g <- ggplot(clinical, aes(fill=Gene, x=UPN,
                                 text=paste0("UPN ID: ", UPN, "<br />Dataset: ", input$dataset))) +
         y_aes +
-        geom_bar(position="dodge", stat="identity") +
-        theme_bw() +
-        ggtitle(plot_title) +
-        theme(
-          text = element_text(size=12, family="avenir", face="bold"),
-          axis.title = element_text(size=12, family="avenir", face="bold"),
-          axis.text = element_text(size=10, family="avenir", face="bold"),
-          axis.text.x = element_text(angle = 90, hjust = 1)
-        ) +
-        ylab(y_label) + xlab("")
+        geom_bar(position="dodge", stat="identity")
 
       # Set the plot ready flag
       plotReady <- TRUE
@@ -198,16 +186,7 @@ server <- function(input, output, session) {
       # Define the common parts of the plot
       g <- ggplot(clinical, aes(eval(as.name(input$subtype)), text=paste0("UPN ID: ", UPN, "<br />Dataset: ", input$dataset))) +
         y_aes +
-        geom_quasirandom(size=0.8) +
-        theme_bw() +
-        ggtitle(plot_title) +
-        theme(
-          text = element_text(size=12, family="avenir", face="bold"),
-          axis.title = element_text(size=12, family="avenir", face="bold"),
-          axis.text = element_text(size=12, family="avenir", face="bold"),
-          axis.text.x = element_text(angle=45, hjust=1)
-        ) +
-        ylab(y_label) + xlab("")
+        geom_quasirandom(size=0.8)
 
       # Set the plot ready flag
       plotReady <- TRUE
@@ -230,9 +209,17 @@ server <- function(input, output, session) {
       # Define the common parts of the plot
       g <- ggplot(clinical, aes(Group, text = paste0("UPN ID: ", UPN, "<br />Mutation: ", Mutation, "<br />Mutation type: ", Mutation_type))) +
         y_aes +
-        geom_quasirandom(size = 0.8) +
+        geom_quasirandom(size = 0.8)
         # geom_violin() +
-        theme_bw() +
+
+      # Set the plot ready flag
+      plotReady <- TRUE
+    }
+
+    # Plotting
+    if(plotReady) {
+      # Final configuration
+      g <- g + theme_bw() +
         ggtitle(plot_title) +
         theme(
           text = element_text(size=12, family="avenir", face="bold"),
@@ -241,13 +228,7 @@ server <- function(input, output, session) {
           axis.text.x = element_text(angle=45, hjust=1)
         ) +
         ylab(y_label) + xlab("")
-      # Set the plot ready flag
-      plotReady <- TRUE
-    }
 
-    # Plotting
-    if(plotReady) {
-      # check if we need to add median line
       if(show.median()) {
         g <- g + stat_summary(fun="median", geom="errorbar", color="red", aes(group=1))
       }
@@ -259,3 +240,6 @@ server <- function(input, output, session) {
     }
   })
 }
+
+
+
