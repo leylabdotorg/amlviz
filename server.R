@@ -76,15 +76,72 @@ server <- function(input, output, session) {
   observeEvent(input$toggle_median, {
     show.median(input$toggle_median)
   })
+
   # Toggle interactive log2
   show.log2 <- reactiveVal(TRUE)
   observeEvent(input$toggle_log, {
     show.log2(input$toggle_log)
   })
+
   # Toggle interactive boxplot
   show.boxplot <- reactiveVal(FALSE)
   observeEvent(input$toggle_boxplot, {
     show.boxplot(input$toggle_boxplot)
+  })
+
+  # Interactive query data
+  queryData <- reactive({
+    # default value
+    clinical <- NULL
+
+    if (input$subtype != "Mutations"){
+      # Query for tcga data
+      if (input$subtype == "Multiplot") {
+        query <- geneQuery(genes = input$genes, table = input$dataset)
+        tcga <- dbGetQuery(database,query)
+        query <- clinicalQuery(factors = "*", dataset = input$dataset)
+      }
+      else if (input$subtype != "Multiplot" && input$subtype != "Mutations") {
+        query <- geneQuery(genes = input$gene, table = input$dataset)
+        tcga <- dbGetQuery(database,query)
+        query <- clinicalQuery(factors= "*",
+                               type=input$subtype,
+                               subtypes=input$subtype_options,
+                               dataset=input$dataset)
+      }
+
+      # Query clinical data and merged it to get final clinical file
+      clinical <- dbGetQuery(database,query)
+      clinical <- merge(tcga, clinical, by="UPN")
+    }
+    else if (input$subtype == "Mutations") {
+      # Query for tcga data
+      query <- geneQuery(genes = input$gene, table = input$dataset)
+      tcga <- dbGetQuery(database,query)
+
+      query <- clinicalQuery(factors = c("UPN", "Mutation", "Mutation_type"), table = "mutation", dataset = input$dataset, type = "Gene", subtypes = input$mutation_status, unique = TRUE)
+      upns_with_mut <- dbGetQuery(database,query)
+
+      tcga$Group <- paste(input$mutation_status, "WT")
+      tcga$Mutation <- paste(input$mutation_status,"WT")
+      tcga$Mutation_type <- NA
+      for(i in upns_with_mut$UPN) {
+        tcga$Group[tcga$UPN == i] <- paste(input$mutation_status, "MT")
+        tcga$Mutation[tcga$UPN == i] <- upns_with_mut$Mutation[upns_with_mut$UPN == i]
+        tcga$Mutation_type[tcga$UPN == i] <- upns_with_mut$Mutation_type[upns_with_mut$UPN == i]
+      }
+      tcga$Gene <- input$gene
+
+      # Merge into final clinical file
+      query <- clinicalQuery(factors = "*", table = "clinical", dataset = input$dataset)
+      all_clinical <- dbGetQuery(database,query)
+      clinical <- merge(tcga, all_clinical, by = "UPN")
+
+      clinical$Group <- factor(clinical$Group, levels = c(paste(input$mutation_status, "WT"), paste(input$mutation_status, "MT")))
+    }
+
+    # Return clinical data
+    clinical
   })
 
 
@@ -93,32 +150,31 @@ server <- function(input, output, session) {
     plotReady <- FALSE
     # Multiplot
     if(input$subtype == "Multiplot" && length(input$genes) > 0) {
-      query <- geneQuery(genes = input$genes, table = input$dataset)
-      tcga <- dbGetQuery(database,query)
-      query <- clinicalQuery(factors = "*", dataset = input$dataset)
-      clinical <- dbGetQuery(database,query)
-      clinical <- merge(tcga, clinical, by="UPN")
-
+      clinical <- queryData()
       # Conditionally define the 'y' aesthetic and y-axis label
       if (show.log2()) {
         y_aes <- aes(y = Expression)
         y_label <- "Log2 Expression"
+        plot_title <- paste0("Log2 Expression for Multiple gene view", input$gene)
       } else {
         y_aes <- aes(y = 2^Expression)
         y_label <- "Expression"
+        plot_title <- paste0("Expression for Multiple gene view", input$gene)
+
       }
       # Define the common parts of the plot
       g <- ggplot(clinical, aes(fill=Gene, x=UPN,
                                 text=paste0("UPN ID: ", UPN, "<br />Dataset: ", input$dataset))) +
         y_aes +
-        geom_bar(position="dodge", stat="identity") + theme_bw() +
+        geom_bar(position="dodge", stat="identity") +
+        theme_bw() +
+        ggtitle(plot_title) +
         theme(
           text = element_text(size=12, family="avenir", face="bold"),
-          axis.text = element_text(size=10, family="avenir", face="bold"),
           axis.title = element_text(size=12, family="avenir", face="bold"),
+          axis.text = element_text(size=10, family="avenir", face="bold"),
           axis.text.x = element_text(angle = 90, hjust = 1)
         ) +
-        ggtitle("Multiple gene view") +
         ylab(y_label) + xlab("")
 
       # Set the plot ready flag
@@ -127,16 +183,7 @@ server <- function(input, output, session) {
 
     # Subtype
     else if(length(input$subtype_options) > 0 && input$subtype != "" && input$gene != "" && input$subtype != "Multiplot" && input$subtype != "Mutations") {
-      query <- geneQuery(genes = input$gene, table = input$dataset)
-      tcga <- dbGetQuery(database,query)
-
-      query <- clinicalQuery(factors="*",
-                             type=input$subtype,
-                             subtypes=input$subtype_options,
-                             dataset=input$dataset)
-      clinical <- dbGetQuery(database,query)
-      clinical <- merge(tcga, clinical, by="UPN")
-
+      clinical <- queryData()
       # Conditionally define the 'y' aesthetic and y-axis label
       if (show.log2()) {
         y_aes <- aes(y = Expression)
@@ -151,10 +198,12 @@ server <- function(input, output, session) {
       # Define the common parts of the plot
       g <- ggplot(clinical, aes(eval(as.name(input$subtype)), text=paste0("UPN ID: ", UPN, "<br />Dataset: ", input$dataset))) +
         y_aes +
-        geom_quasirandom(size=0.8) + theme_bw() +
+        geom_quasirandom(size=0.8) +
+        theme_bw() +
         ggtitle(plot_title) +
         theme(
           text = element_text(size=12, family="avenir", face="bold"),
+          axis.title = element_text(size=12, family="avenir", face="bold"),
           axis.text = element_text(size=12, family="avenir", face="bold"),
           axis.text.x = element_text(angle=45, hjust=1)
         ) +
@@ -166,35 +215,7 @@ server <- function(input, output, session) {
 
     # Mutations
     else if(input$subtype == "Mutations" && input$gene != "" && input$mutation_status != "") {
-      query <- geneQuery(genes = input$gene, table = input$dataset)
-      tcga <- dbGetQuery(database,query)
-
-      query <- clinicalQuery(factors = c("UPN", "Mutation", "Mutation_type"),
-                             table = "mutation",
-                             dataset = input$dataset,
-                             type = "Gene",
-                             subtypes = input$mutation_status,
-                             unique = TRUE)
-      upns_with_mut <- dbGetQuery(database,query)
-
-      tcga$Group <- paste(input$mutation_status, "WT")
-      tcga$Mutation <- paste(input$mutation_status,"WT")
-      tcga$Mutation_type <- NA
-      for(i in upns_with_mut$UPN) {
-        tcga$Group[tcga$UPN == i] <- paste(input$mutation_status, "MT")
-        tcga$Mutation[tcga$UPN == i] <- upns_with_mut$Mutation[upns_with_mut$UPN == i]
-        tcga$Mutation_type[tcga$UPN == i] <- upns_with_mut$Mutation_type[upns_with_mut$UPN == i]
-      }
-
-      tcga$Gene <- input$gene
-      query <- clinicalQuery(factors = "*", table = "clinical", dataset = input$dataset)
-      all_clinical <- dbGetQuery(database,query)
-      clinical <- merge(tcga,all_clinical, by = "UPN")
-
-      clinical$Group <- factor(clinical$Group,
-                               levels = c(paste(input$mutation_status, "WT"),
-                                          paste(input$mutation_status, "MT")))
-      # print(head(clinical))
+      clinical <- queryData()
       # Conditionally define the 'y' aesthetic and y-axis label
       if (show.log2()) {
         y_aes <- aes(y = Expression)
@@ -215,6 +236,7 @@ server <- function(input, output, session) {
         ggtitle(plot_title) +
         theme(
           text = element_text(size=12, family="avenir", face="bold"),
+          axis.title = element_text(size=12, family="avenir", face="bold"),
           axis.text = element_text(size=12, family="avenir", face="bold"),
           axis.text.x = element_text(angle=45, hjust=1)
         ) +
@@ -232,7 +254,7 @@ server <- function(input, output, session) {
       if (show.boxplot()){
         g <- g + geom_boxplot()
       }
-      View(clinical)
+      # View(clinical)
       ggplotly(g, tooltip="text")
     }
   })
