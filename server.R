@@ -89,51 +89,121 @@ server <- function(input, output, session) {
     show.boxplot(input$toggle_boxplot)
   })
 
-  # Interactive query data
-  queryData <- reactive({
-    # default value
-    clinical <- NULL
 
+  # Initialize reactive values for Multiplot to store past queried genes and their expression
+  prev_genes <- reactiveValues(genes = character(0),
+                               expression = data.frame())
+
+  # Initialize reactive values for Fusion/FAB/Cyto_risk to store past queried subtype options and their expression
+  prev_subtypes <- reactiveValues(subtype_options = character(0),
+                                  expression = data.frame())
+
+  # Initialize reactive values for Mutation to store past queried gene
+  prev_mutation_gene <- reactive({
+    query <- geneQuery(genes = input$gene,
+                       table = input$dataset)
+    return(dbGetQuery(database, query))
+  })
+
+  # Initialize reactive clinical data
+  clinicalData <- reactive({
     if (input$subtype == "Multiplot") {
-      query <- geneQuery(genes = input$genes,
-                         table = input$dataset)
-      tcga <- dbGetQuery(database,query)
       query <- clinicalQuery(factors = "*",
                              dataset = input$dataset)
-      clinical <- dbGetQuery(database,query)
-      clinical <- merge(tcga, clinical, by="UPN")
     }
     else if (input$subtype != "Multiplot" && input$subtype != "Mutations") {
       query <- geneQuery(genes = input$gene,
                          table = input$dataset)
-      tcga <- dbGetQuery(database,query)
-      query <- clinicalQuery(factors= "*",
-                             type=input$subtype,
-                             subtypes=input$subtype_options,
-                             dataset=input$dataset)
-      clinical <- dbGetQuery(database,query)
-      clinical <- merge(tcga, clinical, by="UPN")
     }
     else if (input$subtype == "Mutations") {
-      query <- geneQuery(genes = input$gene, table = input$dataset)
-      tcga <- dbGetQuery(database,query)
+      query <- clinicalQuery(factors = "*",
+                             table = "clinical",
+                             dataset = input$dataset)
+    }
+    return(dbGetQuery(database, query))
+  })
+  # Interactive query data
+  queryData <- reactive({
+    # default value
+    clinical <- clinicalData()
 
-      query <- clinicalQuery(factors = c("UPN", "Mutation", "Mutation_type"), table = "mutation", dataset = input$dataset, type = "Gene", subtypes = input$mutation_status, unique = TRUE)
+    if (input$subtype == "Multiplot") {
+      # Determine the new genes to be queried
+      new_genes <- setdiff(input$genes, prev_genes$genes)
+      # If there are any new genes, query the database for them
+      if (length(new_genes) > 0) {
+        query <- geneQuery(genes = new_genes,
+                           table = input$dataset)
+        expression_new <- dbGetQuery(database,query)
+        # Add the new expression to the previously queried expression
+        prev_genes$expression <- rbind(prev_genes$expression, expression_new)
+        # Update the list of previously queried genes
+        prev_genes$genes <- c(prev_genes$genes, new_genes)
+      }
+      # Determine any genes that have been removed from input$genes,
+      removed_genes <- setdiff(prev_genes$genes, input$genes)
+      if (length(removed_genes) > 0) {
+        # if some genes are unselecteed, remove their expression from prev_genes$expression
+        # and the list of previously queried genes: prev_genes$genes
+        prev_genes$expression <- prev_genes$expression[!prev_genes$expression$Gene %in% removed_genes, ]
+        prev_genes$genes <- setdiff(prev_genes$genes, removed_genes)
+      }
+
+      # Make sure expression only contains latest selected genes
+      expression <- prev_genes$expression[prev_genes$expression$Gene %in% input$genes,]
+      clinical <- merge(expression, clinical, by="UPN")
+    }
+    else if (input$subtype != "Multiplot" && input$subtype != "Mutations") {
+      # Determine the new subtype options to be queried
+      new_subtype_options <- setdiff(input$subtype_options, prev_subtypes$subtype_options)
+
+      # If there are any new subtype options, query the database for them
+      if (length(new_subtype_options) > 0) {
+        query <- clinicalQuery(factors= "*",
+                               type=input$subtype,
+                               subtypes=new_subtype_options,
+                               dataset=input$dataset)
+        clinical_new <- dbGetQuery(database,query)
+        # Add the new expression to the previously queried expression
+        prev_subtypes$expression <- rbind(prev_subtypes$expression, clinical_new)
+        # Update the list of previously queried subtype options
+        prev_subtypes$subtype_options <- c(prev_subtypes$subtype_options, new_subtype_options)
+      }
+
+      # Determine any options that have been removed from input$subtype_options
+      removed_subtype_options <- setdiff(prev_subtypes$subtype_options, input$subtype_options)
+      if (length(removed_subtype_options) > 0) {
+        # If there are any subtype options that have been removed from input$subtype_options,
+        # remove their data from prev_subtypes$data and the list of previously queried subtype options
+        prev_subtypes$expression <- prev_subtypes$expression[!prev_subtypes$expression[[input$subtype]] %in% removed_subtype_options, ]
+        prev_subtypes$subtype_options <- setdiff(prev_subtypes$subtype_options, removed_subtype_options)
+      }
+
+      # Make sure expression only contains latest selected genes
+      expression <- prev_subtypes$expression[prev_subtypes$expression[[input$subtype]] %in% input$subtype_options,]
+      clinical <- merge(expression, clinical, by="UPN")
+    }
+    else if (input$subtype == "Mutations") {
+      expression <- prev_mutation_gene()
+      query <- clinicalQuery(factors = c("UPN", "Mutation", "Mutation_type"),
+                             table = "mutation",
+                             dataset = input$dataset,
+                             type = "Gene",
+                             subtypes = input$mutation_status,
+                             unique = TRUE)
       upns_with_mut <- dbGetQuery(database,query)
 
-      tcga$Group <- paste(input$mutation_status, "WT")
-      tcga$Mutation <- paste(input$mutation_status,"WT")
-      tcga$Mutation_type <- NA
+      expression$Group <- paste(input$mutation_status, "WT")
+      expression$Mutation <- paste(input$mutation_status,"WT")
+      expression$Mutation_type <- NA
       for(i in upns_with_mut$UPN) {
-        tcga$Group[tcga$UPN == i] <- paste(input$mutation_status, "MT")
-        tcga$Mutation[tcga$UPN == i] <- upns_with_mut$Mutation[upns_with_mut$UPN == i]
-        tcga$Mutation_type[tcga$UPN == i] <- upns_with_mut$Mutation_type[upns_with_mut$UPN == i]
+        expression$Group[expression$UPN == i] <- paste(input$mutation_status, "MT")
+        expression$Mutation[expression$UPN == i] <- upns_with_mut$Mutation[upns_with_mut$UPN == i]
+        expression$Mutation_type[expression$UPN == i] <- upns_with_mut$Mutation_type[upns_with_mut$UPN == i]
       }
-      tcga$Gene <- input$gene
+      expression$Gene <- input$gene
 
-      query <- clinicalQuery(factors = "*", table = "clinical", dataset = input$dataset)
-      all_clinical <- dbGetQuery(database,query)
-      clinical <- merge(tcga, all_clinical, by = "UPN")
+      clinical <- merge(expression, clinical, by = "UPN")
       clinical$Group <- factor(clinical$Group, levels = c(paste(input$mutation_status, "WT"), paste(input$mutation_status, "MT")))
     }
 

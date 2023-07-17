@@ -1,4 +1,0 @@
-Hugo_Symbol	Entrez_Gene_Id	Center	NCBI_Build	Chromosome	Start_Position	End_position	Strand	Variant_Classification	Variant_Type	Reference_Allele	Tumor_Seq_Allele1	Tumor_Seq_Allele2	Tumor_Sample_Barcode	Protein_Change	i_TumorVAF_WU	i_transcript_name
-DCHS1	0	0	0	chr1	1	2	+	Missense_Mutation	SNP	A	T	T	7
-DCHS1	0	0	0	chr2	1	2	+	Missense_Mutation	SNP	A	T	T	7
-
