@@ -89,7 +89,6 @@ server <- function(input, output, session) {
     show.boxplot(input$toggle_boxplot)
   })
 
-
   # Initialize reactive values for Multiplot to store past queried genes and their expression
   prev_genes <- reactiveValues(genes = character(0),
                                expression = data.frame())
@@ -122,6 +121,7 @@ server <- function(input, output, session) {
     }
     return(dbGetQuery(database, query))
   })
+
   # Interactive query data
   queryData <- reactive({
     # default value
@@ -208,9 +208,8 @@ server <- function(input, output, session) {
     }
 
     # Return clinical data
-    clinical
+    return(clinical)
   })
-
 
   # Handles output for plot
   output$plot <- renderPlotly({
