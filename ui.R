@@ -49,14 +49,11 @@ ui <- fluidPage(
           choices = NULL,
           multiple = FALSE,
           selected = NULL
-        )
-      ),
-
+        ),
         # Render options UI for user
-        uiOutput("toggle_options"),
-
+        uiOutput("toggle_options")
+      ),
     ),
-
 
     mainPanel(
       plotlyOutput("plot", height = "500px")

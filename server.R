@@ -19,56 +19,65 @@ server <- function(input, output, session) {
   # Toggles several ui elements based on the dataset and subtype
   observeEvent(input$subtype, {
     hideAllElements()
-    if (input$dataset != ""){
-      if(input$subtype == "Multiplot") {
-        shinyjs::show(id = "genes")
-        # Render ui option
-        output$toggle_options <- renderUI({
-          tagList(
-            tags$b("Plotting options:"),
-            checkboxInput(inputId = "toggle_log",
-                          label = "Log2 scale y-axis",
-                          value = TRUE)
-          )
-        })
-      }
-      else {
-        if(input$subtype == "Mutations") {
-          shinyjs::show(id = "gene")
-          shinyjs::show(id = "mutation_status")
 
-          query <- clinicalQuery(factors = "Gene", table = "mutation", dataset = input$dataset, type = "Gene", unique = TRUE, sort = TRUE)
-          mutation_choices <- dbGetQuery(database, query)
-          updateSelectizeInput(session, "mutation_status", choices = mutation_choices$Gene, selected = NULL, server = TRUE)
-        }
-        else if(input$subtype != "Mutations" && input$subtype != "") {
-          shinyjs::show(id = "gene")
-          shinyjs::show(id = "subtype_options")
-          query <- clinicalQuery(factors=c(input$subtype), type=input$subtype, dataset=input$dataset, unique=TRUE, sort=TRUE)
-          subtype_choices <- unlist(dbGetQuery(database,query),use.names = FALSE)
-          updateCheckboxGroupInput(session,
-                                   "subtype_options",
-                                   label = "Subtypes",
-                                   choices = subtype_choices,
-                                   selected = subtype_choices)
-        }
-        # render median-line checkbox + raw-value checkbox
-        output$toggle_options <- renderUI({
-          tagList(
-            tags$b("Plotting options:"),
-            checkboxInput(inputId = "toggle_median",
-                          label = "Show Median Line",
-                          value = TRUE),
-            checkboxInput(inputId = "toggle_log",
-                          label = "Log2 scale y-axis",
-                          value = TRUE),
-            checkboxInput(inputId = "toggle_boxplot",
-                          label = "Toggle boxplot",
-                          value = FALSE)
-          )
-        })
-      }
+    if(input$subtype == "Multiplot") {
+      shinyjs::show(id = "genes")
+      shinyjs::show(id = "toggle_options")
+
+      # Render ui option for multiplot
+      output$toggle_options <- renderUI({
+        tagList(
+          tags$b("Plotting options:"),
+          checkboxInput(inputId = "toggle_log",
+                        label = "Log2 scale y-axis",
+                        value = TRUE)
+        )
+      })
     }
+    else if(input$subtype != "Multiplot") {
+      if(input$subtype == "Mutations") {
+        shinyjs::show(id = "gene")
+        shinyjs::show(id = "mutation_status")
+        shinyjs::show(id = "toggle_options")
+
+        query <- clinicalQuery(factors = "Gene", table = "mutation", dataset = input$dataset, type = "Gene", unique = TRUE, sort = TRUE)
+        mutation_choices <- dbGetQuery(database, query)
+        updateSelectizeInput(session, "mutation_status", choices = mutation_choices$Gene, selected = NULL, server = TRUE)
+      }
+      else if(input$subtype != "Mutations" && input$subtype != "") {
+        shinyjs::show(id = "gene")
+        shinyjs::show(id = "subtype_options")
+        shinyjs::show(id = "toggle_options")
+
+        query <- clinicalQuery(factors=c(input$subtype), type=input$subtype, dataset=input$dataset, unique=TRUE, sort=TRUE)
+        subtype_choices <- unlist(dbGetQuery(database,query),use.names = FALSE)
+        updateCheckboxGroupInput(session,
+                                 "subtype_options",
+                                 label = "Subtypes",
+                                 choices = subtype_choices,
+                                 selected = subtype_choices)
+      }
+      # Render ui option for other subtypes
+      output$toggle_options <- renderUI({
+        tagList(
+          tags$b("Plotting options:"),
+          checkboxInput(inputId = "toggle_median",
+                        label = "Show Median Line",
+                        value = TRUE),
+          checkboxInput(inputId = "toggle_log",
+                        label = "Log2 scale y-axis",
+                        value = TRUE),
+          checkboxInput(inputId = "toggle_boxplot",
+                        label = "Toggle Box plot",
+                        value = FALSE),
+          checkboxInput(inputId = "toggle_violinplot",
+                        label = "Toggle Violin plot",
+                        value = FALSE)
+        )
+      })
+    }
+
+    # render median-line checkbox + raw-value checkbox
   })
 
   # Toggle interactive median line
@@ -89,6 +98,12 @@ server <- function(input, output, session) {
     show.boxplot(input$toggle_boxplot)
   })
 
+  # Toggle interactive violinplot
+  show.violinplot <- reactiveVal(FALSE)
+  observeEvent(input$toggle_violinplot, {
+    show.violinplot(input$toggle_violinplot)
+  })
+
   # Initialize reactive values for Multiplot to store past queried genes and their expression
   prev_genes <- reactiveValues(genes = character(0),
                                expression = data.frame())
@@ -106,20 +121,17 @@ server <- function(input, output, session) {
 
   # Initialize reactive clinical data
   clinicalData <- reactive({
-    if (input$subtype == "Multiplot") {
+    if (input$subtype == "Multiplot" || input$subtype == "Mutations") {
       query <- clinicalQuery(factors = "*",
+                             table = "clinical",
                              dataset = input$dataset)
     }
     else if (input$subtype != "Multiplot" && input$subtype != "Mutations") {
       query <- geneQuery(genes = input$gene,
                          table = input$dataset)
     }
-    else if (input$subtype == "Mutations") {
-      query <- clinicalQuery(factors = "*",
-                             table = "clinical",
-                             dataset = input$dataset)
-    }
-    return(dbGetQuery(database, query))
+    x <- dbGetQuery(database, query)
+    return(x)
   })
 
   # Interactive query data
@@ -153,6 +165,29 @@ server <- function(input, output, session) {
       expression <- prev_genes$expression[prev_genes$expression$Gene %in% input$genes,]
       clinical <- merge(expression, clinical, by="UPN")
     }
+    else if (input$subtype == "Mutations") {
+      expression <- prev_mutation_gene()
+      query <- clinicalQuery(factors = c("UPN", "Mutation", "Mutation_type"),
+                             table = "mutation",
+                             dataset = input$dataset,
+                             type = "Gene",
+                             subtypes = input$mutation_status,
+                             unique = TRUE)
+      upns_with_mut <- dbGetQuery(database,query)
+
+      expression$Group <- paste(input$mutation_status, "WT")
+      expression$Mutation <- paste(input$mutation_status,"WT")
+      expression$Mutation_type <- NA
+      for(i in upns_with_mut$UPN) {
+        expression$Group[expression$UPN == i] <- paste(input$mutation_status, "MT")
+        expression$Mutation[expression$UPN == i] <- upns_with_mut$Mutation[upns_with_mut$UPN == i]
+        expression$Mutation_type[expression$UPN == i] <- upns_with_mut$Mutation_type[upns_with_mut$UPN == i]
+      }
+      expression$Gene <- input$gene
+
+      clinical <- merge(expression, clinical, by = "UPN")
+      clinical$Group <- factor(clinical$Group, levels = c(paste(input$mutation_status, "WT"), paste(input$mutation_status, "MT")))
+    }
     else if (input$subtype != "Multiplot" && input$subtype != "Mutations") {
       # Determine the new subtype options to be queried
       new_subtype_options <- setdiff(input$subtype_options, prev_subtypes$subtype_options)
@@ -181,30 +216,8 @@ server <- function(input, output, session) {
 
       # Make sure expression only contains latest selected genes
       expression <- prev_subtypes$expression[prev_subtypes$expression[[input$subtype]] %in% input$subtype_options,]
+      print(summary(expression))
       clinical <- merge(expression, clinical, by="UPN")
-    }
-    else if (input$subtype == "Mutations") {
-      expression <- prev_mutation_gene()
-      query <- clinicalQuery(factors = c("UPN", "Mutation", "Mutation_type"),
-                             table = "mutation",
-                             dataset = input$dataset,
-                             type = "Gene",
-                             subtypes = input$mutation_status,
-                             unique = TRUE)
-      upns_with_mut <- dbGetQuery(database,query)
-
-      expression$Group <- paste(input$mutation_status, "WT")
-      expression$Mutation <- paste(input$mutation_status,"WT")
-      expression$Mutation_type <- NA
-      for(i in upns_with_mut$UPN) {
-        expression$Group[expression$UPN == i] <- paste(input$mutation_status, "MT")
-        expression$Mutation[expression$UPN == i] <- upns_with_mut$Mutation[upns_with_mut$UPN == i]
-        expression$Mutation_type[expression$UPN == i] <- upns_with_mut$Mutation_type[upns_with_mut$UPN == i]
-      }
-      expression$Gene <- input$gene
-
-      clinical <- merge(expression, clinical, by = "UPN")
-      clinical$Group <- factor(clinical$Group, levels = c(paste(input$mutation_status, "WT"), paste(input$mutation_status, "MT")))
     }
 
     # Return clinical data
@@ -239,7 +252,7 @@ server <- function(input, output, session) {
     }
 
     # Subtype
-    else if(length(input$subtype_options) > 0 && input$subtype != "" && input$gene != "" && input$subtype != "Multiplot" && input$subtype != "Mutations") {
+    else if(length(input$subtype_options) > 0 && input$gene != "" && input$subtype != "Multiplot" && input$subtype != "Mutations"  && input$subtype != "") {
       clinical <- queryData()
       # Conditionally define the 'y' aesthetic and y-axis label
       if (show.log2()) {
@@ -253,9 +266,12 @@ server <- function(input, output, session) {
       }
 
       # Define the common parts of the plot
-      g <- ggplot(clinical, aes(eval(as.name(input$subtype)), text=paste0("UPN ID: ", UPN, "<br />Dataset: ", input$dataset))) +
-        y_aes +
-        geom_quasirandom(size=0.8)
+      g <- ggplot(clinical, aes(x=eval(as.name(input$subtype)))) + y_aes +
+        geom_quasirandom(size=0.8, aes(text=paste0("UPN ID: ", UPN, "<br />Dataset: ", input$dataset)))
+
+      if (show.violinplot()){
+        g <- g + geom_violin(alpha = 0.5, aes(fill=eval(as.name(input$subtype)))) + labs(fill="Subtypes")
+      }
 
       # Set the plot ready flag
       plotReady <- TRUE
@@ -276,10 +292,12 @@ server <- function(input, output, session) {
       }
 
       # Define the common parts of the plot
-      g <- ggplot(clinical, aes(Group, text = paste0("UPN ID: ", UPN, "<br />Mutation: ", Mutation, "<br />Mutation type: ", Mutation_type))) +
-        y_aes +
-        geom_quasirandom(size = 0.8)
-        # geom_violin() +
+      g <- ggplot(clinical, aes(x=Group)) + y_aes +
+        geom_quasirandom(size = 0.8, aes(text = paste0("UPN ID: ", UPN, "<br />Mutation: ", Mutation, "<br />Mutation type: ", Mutation_type)))
+
+      if (show.violinplot()){
+        g <- g + geom_violin(scale = "count", alpha = 0.5, aes(fill=Group)) + labs(fill="Mutation Status")
+      }
 
       # Set the plot ready flag
       plotReady <- TRUE
@@ -299,15 +317,17 @@ server <- function(input, output, session) {
         ylab(y_label) + xlab("")
 
       if(show.median()) {
-        g <- g + stat_summary(fun="median", geom="errorbar", color="red", aes(group=1))
+        g <- g + stat_summary(fun="median", geom="errorbar", color="red")
       }
       if (show.boxplot()){
         g <- g + geom_boxplot()
       }
-      # View(clinical)
+
       ggplotly(g, tooltip="text")
     }
   })
+
+
 }
 
 
