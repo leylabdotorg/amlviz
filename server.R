@@ -19,7 +19,6 @@ server <- function(input, output, session) {
   # Toggles several ui elements based on the dataset and subtype
   observeEvent(input$subtype, {
     hideAllElements()
-
     if(input$subtype == "Multiplot") {
       shinyjs::show(id = "genes")
       shinyjs::show(id = "toggle_options")
@@ -76,8 +75,6 @@ server <- function(input, output, session) {
         )
       })
     }
-
-    # render median-line checkbox + raw-value checkbox
   })
 
   # Toggle interactive median line
@@ -104,21 +101,6 @@ server <- function(input, output, session) {
     show.violinplot(input$toggle_violinplot)
   })
 
-  # Initialize reactive values for Multiplot to store past queried genes and their expression
-  prev_genes <- reactiveValues(genes = character(0),
-                               expression = data.frame())
-
-  # Initialize reactive values for Fusion/FAB/Cyto_risk to store past queried subtype options and their expression
-  prev_subtypes <- reactiveValues(subtype_options = character(0),
-                                  expression = data.frame())
-
-  # Initialize reactive values for Mutation to store past queried gene
-  prev_mutation_gene <- reactive({
-    query <- geneQuery(genes = input$gene,
-                       table = input$dataset)
-    return(dbGetQuery(database, query))
-  })
-
   # Initialize reactive clinical data
   clinicalData <- reactive({
     if (input$subtype == "Multiplot" || input$subtype == "Mutations") {
@@ -130,16 +112,21 @@ server <- function(input, output, session) {
       query <- geneQuery(genes = input$gene,
                          table = input$dataset)
     }
-    x <- dbGetQuery(database, query)
-    return(x)
+    return(dbGetQuery(database, query))
+  })
+
+  # Initialize reactive values for Multiplot to store past queried genes and their expression
+  prev_genes <- reactiveValues(genes = character(0), expression = data.frame())
+  # Initialize reactive query for Mutation and return db
+  prev_mutation_gene <- reactive({
+    query <- geneQuery(genes = input$gene, table = input$dataset)
+    return(dbGetQuery(database, query))
   })
 
   # Interactive query data
   queryData <- reactive({
-    # default value
-    clinical <- clinicalData()
-
     if (input$subtype == "Multiplot") {
+      clinical <- clinicalData()
       # Determine the new genes to be queried
       new_genes <- setdiff(input$genes, prev_genes$genes)
       # If there are any new genes, query the database for them
@@ -160,12 +147,10 @@ server <- function(input, output, session) {
         prev_genes$expression <- prev_genes$expression[!prev_genes$expression$Gene %in% removed_genes, ]
         prev_genes$genes <- setdiff(prev_genes$genes, removed_genes)
       }
-
-      # Make sure expression only contains latest selected genes
-      expression <- prev_genes$expression[prev_genes$expression$Gene %in% input$genes,]
-      clinical <- merge(expression, clinical, by="UPN")
+      clinical <- merge(prev_genes$expression, clinical, by="UPN")
     }
     else if (input$subtype == "Mutations") {
+      clinical <- clinicalData()
       expression <- prev_mutation_gene()
       query <- clinicalQuery(factors = c("UPN", "Mutation", "Mutation_type"),
                              table = "mutation",
@@ -174,7 +159,7 @@ server <- function(input, output, session) {
                              subtypes = input$mutation_status,
                              unique = TRUE)
       upns_with_mut <- dbGetQuery(database,query)
-
+      print(summary(upns_with_mut))
       expression$Group <- paste(input$mutation_status, "WT")
       expression$Mutation <- paste(input$mutation_status,"WT")
       expression$Mutation_type <- NA
@@ -188,38 +173,16 @@ server <- function(input, output, session) {
       clinical <- merge(expression, clinical, by = "UPN")
       clinical$Group <- factor(clinical$Group, levels = c(paste(input$mutation_status, "WT"), paste(input$mutation_status, "MT")))
     }
-    else if (input$subtype != "Multiplot" && input$subtype != "Mutations") {
+    else { # Fusion/FAB/Cyto_risk
+      clinical <- clinicalData()
       # Determine the new subtype options to be queried
-      new_subtype_options <- setdiff(input$subtype_options, prev_subtypes$subtype_options)
-
-      # If there are any new subtype options, query the database for them
-      if (length(new_subtype_options) > 0) {
-        query <- clinicalQuery(factors= "*",
-                               type=input$subtype,
-                               subtypes=new_subtype_options,
-                               dataset=input$dataset)
-        clinical_new <- dbGetQuery(database,query)
-        # Add the new expression to the previously queried expression
-        prev_subtypes$expression <- rbind(prev_subtypes$expression, clinical_new)
-        # Update the list of previously queried subtype options
-        prev_subtypes$subtype_options <- c(prev_subtypes$subtype_options, new_subtype_options)
-      }
-
-      # Determine any options that have been removed from input$subtype_options
-      removed_subtype_options <- setdiff(prev_subtypes$subtype_options, input$subtype_options)
-      if (length(removed_subtype_options) > 0) {
-        # If there are any subtype options that have been removed from input$subtype_options,
-        # remove their data from prev_subtypes$data and the list of previously queried subtype options
-        prev_subtypes$expression <- prev_subtypes$expression[!prev_subtypes$expression[[input$subtype]] %in% removed_subtype_options, ]
-        prev_subtypes$subtype_options <- setdiff(prev_subtypes$subtype_options, removed_subtype_options)
-      }
-
-      # Make sure expression only contains latest selected genes
-      expression <- prev_subtypes$expression[prev_subtypes$expression[[input$subtype]] %in% input$subtype_options,]
-      print(summary(expression))
+      query <- clinicalQuery(factors= "*",
+                             type=input$subtype,
+                             subtypes=input$subtype_options,
+                             dataset=input$dataset)
+      expression <- dbGetQuery(database,query)
       clinical <- merge(expression, clinical, by="UPN")
     }
-
     # Return clinical data
     return(clinical)
   })
@@ -251,32 +214,6 @@ server <- function(input, output, session) {
       plotReady <- TRUE
     }
 
-    # Subtype
-    else if(length(input$subtype_options) > 0 && input$gene != "" && input$subtype != "Multiplot" && input$subtype != "Mutations"  && input$subtype != "") {
-      clinical <- queryData()
-      # Conditionally define the 'y' aesthetic and y-axis label
-      if (show.log2()) {
-        y_aes <- aes(y = Expression)
-        y_label <- "Log2 Expression"
-        plot_title <- paste0("Log2 Expression for ", input$gene)
-      } else {
-        y_aes <- aes(y = 2^Expression)
-        y_label <- "Expression"
-        plot_title <- paste0("Expression for ", input$gene)
-      }
-
-      # Define the common parts of the plot
-      g <- ggplot(clinical, aes(x=eval(as.name(input$subtype)))) + y_aes +
-        geom_quasirandom(size=0.8, aes(text=paste0("UPN ID: ", UPN, "<br />Dataset: ", input$dataset)))
-
-      if (show.violinplot()){
-        g <- g + geom_violin(alpha = 0.5, aes(fill=eval(as.name(input$subtype)))) + labs(fill="Subtypes")
-      }
-
-      # Set the plot ready flag
-      plotReady <- TRUE
-    }
-
     # Mutations
     else if(input$subtype == "Mutations" && input$gene != "" && input$mutation_status != "") {
       clinical <- queryData()
@@ -296,9 +233,33 @@ server <- function(input, output, session) {
         geom_quasirandom(size = 0.8, aes(text = paste0("UPN ID: ", UPN, "<br />Mutation: ", Mutation, "<br />Mutation type: ", Mutation_type)))
 
       if (show.violinplot()){
-        g <- g + geom_violin(scale = "count", alpha = 0.5, aes(fill=Group)) + labs(fill="Mutation Status")
+        g <- g + geom_violin(scale = "count", alpha = 0.5, aes(fill=Group)) + labs(fill="Mutation Status") + guides(fill="none")
       }
 
+      # Set the plot ready flag
+      plotReady <- TRUE
+    }
+
+    # Subtype
+    else if(length(input$subtype_options) > 0 && input$gene != "" && input$subtype != "Multiplot" && input$subtype != "Mutations"  && input$subtype != "") {
+      clinical <- queryData()
+      # Conditionally define the 'y' aesthetic and y-axis label
+      if (show.log2()) {
+        y_aes <- aes(y = Expression)
+        y_label <- "Log2 Expression"
+        plot_title <- paste0("Log2 Expression for ", input$gene)
+      } else {
+        y_aes <- aes(y = 2^Expression)
+        y_label <- "Expression"
+        plot_title <- paste0("Expression for ", input$gene)
+      }
+
+      # Define the common parts of the plot
+      g <- ggplot(clinical, aes(x=eval(as.name(input$subtype)))) + y_aes +
+        geom_quasirandom(size=0.8, aes(text=paste0("UPN ID: ", UPN, "<br />Dataset: ", input$dataset)))
+      if (show.violinplot()){
+        g <- g + geom_violin(alpha = 0.5, aes(fill=eval(as.name(input$subtype)))) + labs(fill="Subtypes") + guides(fill="none")
+      }
       # Set the plot ready flag
       plotReady <- TRUE
     }
