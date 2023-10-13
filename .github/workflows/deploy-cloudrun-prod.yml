@@ -46,15 +46,15 @@
 name: Build and Deploy to Cloud Run
 
 on:
-  push:
-    branches: [ "main" ]
+  release:
+    types: [published]
 
 env:
   PROJECT_ID: ${{ secrets.PROJECT_ID }}
   GAR_LOCATION: ${{ secrets.GAR_LOCATION }}
   SERVICE: ${{ secrets.SERVICE }}
   REGION: ${{ secrets.REGION }}
-  CONTAINER_NAME: ${{ secrets.CONTAINER_NAME_DEV }}
+  CONTAINER_NAME: ${{ secrets.CONTAINER_NAME_PROD }}
 
 jobs:
   deploy:
